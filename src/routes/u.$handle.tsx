@@ -63,7 +63,7 @@ function ProfileView() {
           {profile.bio && <p className="mt-4 max-w-sm text-foreground/90">{profile.bio}</p>}
 
           <div className="mt-8 w-full space-y-3">
-            {links.map((l) => (
+            {links.map((l: { id: string; label: string; url: string }) => (
               <a key={l.id} href={l.url} target="_blank" rel="noreferrer noopener"
                 className="block rounded-xl border border-white/15 bg-white/5 px-5 py-4 font-bold uppercase tracking-wide backdrop-blur transition hover:scale-[1.02] hover:bg-white/10"
                 style={{ borderColor: `${accent}55` }}>

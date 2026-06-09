@@ -14,7 +14,101 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      invite_codes: {
+        Row: {
+          code: string
+          created_at: string
+          uses_remaining: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          uses_remaining?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          uses_remaining?: number
+        }
+        Relationships: []
+      }
+      links: {
+        Row: {
+          created_at: string
+          icon: string | null
+          id: string
+          label: string
+          profile_id: string
+          sort_order: number
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          icon?: string | null
+          id?: string
+          label: string
+          profile_id: string
+          sort_order?: number
+          url: string
+        }
+        Update: {
+          created_at?: string
+          icon?: string | null
+          id?: string
+          label?: string
+          profile_id?: string
+          sort_order?: number
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "links_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          accent_color: string | null
+          avatar_url: string | null
+          background_url: string | null
+          bio: string | null
+          created_at: string
+          display_name: string | null
+          handle: string
+          id: string
+          plan: string
+          updated_at: string
+        }
+        Insert: {
+          accent_color?: string | null
+          avatar_url?: string | null
+          background_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          handle: string
+          id: string
+          plan?: string
+          updated_at?: string
+        }
+        Update: {
+          accent_color?: string | null
+          avatar_url?: string | null
+          background_url?: string | null
+          bio?: string | null
+          created_at?: string
+          display_name?: string | null
+          handle?: string
+          id?: string
+          plan?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

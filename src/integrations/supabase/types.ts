@@ -74,38 +74,68 @@ export type Database = {
         Row: {
           accent_color: string | null
           avatar_url: string | null
+          background_type: string
           background_url: string | null
           bio: string | null
+          card_opacity: number
           created_at: string
+          cursor_url: string | null
           display_name: string | null
+          effect: string
+          font_family: string | null
+          font_url: string | null
           handle: string
           id: string
+          intro_enabled: boolean
+          intro_text: string | null
+          music_url: string | null
           plan: string
           updated_at: string
+          views: number
         }
         Insert: {
           accent_color?: string | null
           avatar_url?: string | null
+          background_type?: string
           background_url?: string | null
           bio?: string | null
+          card_opacity?: number
           created_at?: string
+          cursor_url?: string | null
           display_name?: string | null
+          effect?: string
+          font_family?: string | null
+          font_url?: string | null
           handle: string
           id: string
+          intro_enabled?: boolean
+          intro_text?: string | null
+          music_url?: string | null
           plan?: string
           updated_at?: string
+          views?: number
         }
         Update: {
           accent_color?: string | null
           avatar_url?: string | null
+          background_type?: string
           background_url?: string | null
           bio?: string | null
+          card_opacity?: number
           created_at?: string
+          cursor_url?: string | null
           display_name?: string | null
+          effect?: string
+          font_family?: string | null
+          font_url?: string | null
           handle?: string
           id?: string
+          intro_enabled?: boolean
+          intro_text?: string | null
+          music_url?: string | null
           plan?: string
           updated_at?: string
+          views?: number
         }
         Relationships: []
       }

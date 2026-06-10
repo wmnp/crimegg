@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,9 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Trash2, Plus, ExternalLink, LogOut, Upload } from "lucide-react";
+import {
+  Trash2, Plus, ExternalLink, LogOut, Upload, Download, Eye,
+  User, Image as ImageIcon, Palette, Sparkles, AtSign, Wrench,
+} from "lucide-react";
 import { uploadProfileMedia } from "@/lib/storage";
 import { EFFECT_OPTIONS, type Effect } from "@/components/profile-effects";
+import { THEMES, BADGE_DEFS } from "@/lib/themes";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — crime.gg" }, { name: "robots", content: "noindex" }] }),
@@ -25,14 +29,28 @@ type Profile = {
   accent_color: string | null; plan: string;
   effect: string; card_opacity: number;
   intro_enabled: boolean; intro_text: string | null;
+  theme: string; glow_text: boolean; cursor_trail: boolean; scanlines: boolean;
+  badges: string[]; visualizer: boolean; blur_amount: number; views: number;
 };
 type LinkRow = { id: string; profile_id: string; label: string; url: string; sort_order: number };
+
+const TABS = [
+  { id: "profile", label: "Profile", icon: User },
+  { id: "media", label: "Media", icon: ImageIcon },
+  { id: "style", label: "Style", icon: Palette },
+  { id: "effects", label: "Effects", icon: Sparkles },
+  { id: "handle", label: "Handle", icon: AtSign },
+  { id: "tools", label: "Tools", icon: Wrench },
+] as const;
+type TabId = (typeof TABS)[number]["id"];
 
 function Dashboard() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [original, setOriginal] = useState<Profile | null>(null);
   const [links, setLinks] = useState<LinkRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<TabId>("profile");
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
@@ -45,10 +63,15 @@ function Dashboard() {
         supabase.from("profiles").select("*").eq("id", user.id).single(),
         supabase.from("links").select("*").eq("profile_id", user.id).order("sort_order"),
       ]);
-      setProfile(prof as Profile); setLinks((lks as LinkRow[]) ?? []); setLoading(false);
+      setProfile(prof as Profile);
+      setOriginal(prof as Profile);
+      setLinks((lks as LinkRow[]) ?? []);
+      setLoading(false);
     })();
     return () => sub.subscription.unsubscribe();
   }, [navigate]);
+
+  const dirty = useMemo(() => JSON.stringify(profile) !== JSON.stringify(original), [profile, original]);
 
   function patch<K extends keyof Profile>(key: K, value: Profile[K]) {
     if (!profile) return;
@@ -57,9 +80,26 @@ function Dashboard() {
 
   async function saveProfile() {
     if (!profile) return;
-    const { id, handle, plan, ...rest } = profile;
+    const { id, handle, plan, views, ...rest } = profile;
     const { error } = await supabase.from("profiles").update(rest).eq("id", id);
-    if (error) toast.error(error.message); else toast.success("Saved");
+    if (error) toast.error(error.message);
+    else { toast.success("Saved!"); setOriginal(profile); }
+  }
+
+  function undoChanges() {
+    if (!original) return;
+    setProfile(original);
+    toast("Reverted to last save");
+  }
+
+  function downloadJSON() {
+    if (!profile) return;
+    const blob = new Blob([JSON.stringify({ profile, links }, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${profile.handle}-crime-gg.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
   }
 
   async function addLink() {
@@ -74,8 +114,7 @@ function Dashboard() {
     setLinks(links.map((l) => l.id === id ? { ...l, ...patch } : l));
   }
   async function commitLink(link: LinkRow) {
-    const { error } = await supabase.from("links")
-      .update({ label: link.label, url: link.url }).eq("id", link.id);
+    const { error } = await supabase.from("links").update({ label: link.label, url: link.url }).eq("id", link.id);
     if (error) toast.error(error.message);
   }
   async function deleteLink(id: string) {
@@ -89,165 +128,351 @@ function Dashboard() {
     navigate({ to: "/" });
   }
 
+  function toggleBadge(b: string) {
+    if (!profile) return;
+    const has = profile.badges.includes(b);
+    patch("badges", has ? profile.badges.filter((x) => x !== b) : [...profile.badges, b]);
+  }
+
+  function applyTheme(id: string) {
+    if (!profile) return;
+    const t = THEMES.find((x) => x.id === id);
+    if (!t) return;
+    setProfile({ ...profile, theme: id, accent_color: t.accent });
+    toast.success(`Theme: ${t.name}`);
+  }
+
   if (loading || !profile) {
     return <div className="flex min-h-screen items-center justify-center text-muted-foreground">loading...</div>;
   }
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-border/40 bg-background/60 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link to="/" className="text-2xl font-black">crime<span className="text-gradient-crime">.gg</span></Link>
+      <header className="sticky top-0 z-30 border-b border-border/40 bg-background/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+          <Link to="/" className="text-xl font-black sm:text-2xl">crime<span className="text-gradient-crime">.gg</span></Link>
           <div className="flex items-center gap-2">
+            {dirty && <span className="hidden text-xs uppercase tracking-wider text-amber-400 sm:inline">● unsaved</span>}
             <Button asChild variant="outline" size="sm">
               <a href={`/u/${profile.handle}`} target="_blank" rel="noreferrer">
-                View <ExternalLink className="ml-2 h-3.5 w-3.5" />
+                <Eye className="h-3.5 w-3.5" /> <span className="hidden sm:inline">View</span>
               </a>
             </Button>
-            <Button onClick={saveProfile} size="sm" className="glow-crime font-bold uppercase">Save</Button>
-            <Button variant="ghost" size="sm" onClick={signOut}><LogOut className="h-4 w-4" /></Button>
+            <Button onClick={saveProfile} size="sm" className="glow-crime font-bold uppercase" disabled={!dirty}>Save</Button>
+            <Button variant="ghost" size="icon" onClick={signOut}><LogOut className="h-4 w-4" /></Button>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl space-y-6 px-6 py-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-black uppercase">@{profile.handle}</h1>
-            <p className="text-sm text-muted-foreground">crime.gg/u/{profile.handle}</p>
+      <main className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[260px_1fr_360px]">
+        {/* Sidebar Tabs */}
+        <aside className="lg:sticky lg:top-20 lg:h-fit">
+          <div className="mb-4">
+            <h1 className="truncate text-2xl font-black uppercase">@{profile.handle}</h1>
+            <p className="text-xs text-muted-foreground">{profile.views} views</p>
           </div>
-          <span className="rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-xs font-bold uppercase text-primary">
-            {profile.plan}
-          </span>
+          <nav className="flex flex-wrap gap-1 lg:flex-col">
+            {TABS.map((t) => {
+              const Icon = t.icon;
+              const active = tab === t.id;
+              return (
+                <button key={t.id} onClick={() => setTab(t.id)}
+                  className={`group flex flex-1 items-center gap-2 rounded-lg border px-3 py-2.5 text-sm font-bold uppercase tracking-wider transition lg:flex-none ${active
+                    ? "border-primary bg-primary/15 text-primary shadow-[0_0_20px_-5px_var(--crime)]"
+                    : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"}`}>
+                  <Icon className="h-4 w-4" /> {t.label}
+                </button>
+              );
+            })}
+          </nav>
+        </aside>
+
+        {/* Main content */}
+        <div className="space-y-6">
+          {tab === "profile" && (
+            <Section title="Identity">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field label="Display name">
+                  <Input value={profile.display_name ?? ""} onChange={(e) => patch("display_name", e.target.value)} />
+                </Field>
+                <Field label="Accent color">
+                  <Input type="color" value={profile.accent_color ?? "#ef4444"} className="h-10 p-1"
+                    onChange={(e) => patch("accent_color", e.target.value)} />
+                </Field>
+                <Field label="Bio" full>
+                  <Textarea rows={4} value={profile.bio ?? ""} onChange={(e) => patch("bio", e.target.value)} />
+                </Field>
+              </div>
+              <div className="mt-4">
+                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Badges</Label>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {Object.entries(BADGE_DEFS).map(([key, b]) => {
+                    const on = profile.badges.includes(key);
+                    return (
+                      <button key={key} type="button" onClick={() => toggleBadge(key)}
+                        className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wider transition ${on ? "border-transparent text-white" : "border-border text-muted-foreground hover:border-primary/40"}`}
+                        style={on ? { backgroundColor: b.color, boxShadow: `0 0 18px -4px ${b.color}` } : undefined}>
+                        <span>{b.emoji}</span> {b.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </Section>
+          )}
+
+          {tab === "media" && (
+            <Section title="Media uploads">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FileSlot label="Avatar (jpg, png, gif)" accept="image/*" userId={profile.id} kind="avatar"
+                  currentUrl={profile.avatar_url} onUploaded={(u) => patch("avatar_url", u)} preview="image" />
+                <div className="space-y-2">
+                  <Label className="text-xs uppercase tracking-wider text-muted-foreground">Background type</Label>
+                  <div className="flex gap-2">
+                    {(["image", "video"] as const).map((t) => (
+                      <button key={t} type="button" onClick={() => patch("background_type", t)}
+                        className={`flex-1 rounded-md border px-3 py-2 text-sm font-bold uppercase tracking-wider ${profile.background_type === t ? "border-primary bg-primary/20 text-primary" : "border-border text-muted-foreground"}`}>
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                  <FileSlot label={profile.background_type === "video" ? "Background video (mp4)" : "Background image"}
+                    accept={profile.background_type === "video" ? "video/*" : "image/*"}
+                    userId={profile.id} kind="background"
+                    currentUrl={profile.background_url} onUploaded={(u) => patch("background_url", u)}
+                    preview={profile.background_type === "video" ? "video" : "image"} />
+                </div>
+                <FileSlot label="Background music (mp3, ogg)" accept="audio/*" userId={profile.id} kind="music"
+                  currentUrl={profile.music_url} onUploaded={(u) => patch("music_url", u)} preview="audio" />
+                <FileSlot label="Custom cursor (png 32×32)" accept="image/png,image/gif" userId={profile.id} kind="cursor"
+                  currentUrl={profile.cursor_url} onUploaded={(u) => patch("cursor_url", u)} preview="image" />
+                <FileSlot label="Custom font (woff2, ttf, otf)" accept=".woff2,.woff,.ttf,.otf,font/*"
+                  userId={profile.id} kind="font"
+                  currentUrl={profile.font_url} onUploaded={(u) => patch("font_url", u)} />
+                <Field label="Font family name">
+                  <Input value={profile.font_family ?? ""} placeholder="MyFont"
+                    onChange={(e) => patch("font_family", e.target.value)} />
+                </Field>
+              </div>
+            </Section>
+          )}
+
+          {tab === "style" && (
+            <>
+              <Section title="Theme presets">
+                <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+                  {THEMES.map((t) => {
+                    const active = profile.theme === t.id;
+                    return (
+                      <button key={t.id} type="button" onClick={() => applyTheme(t.id)}
+                        className={`group relative overflow-hidden rounded-xl border p-4 text-left transition ${active ? "border-primary shadow-[0_0_30px_-8px_var(--crime)]" : "border-border hover:border-primary/40"}`}
+                        style={{ background: t.bgGradient }}>
+                        <div className="flex items-center gap-2">
+                          <span className="h-4 w-4 rounded-full" style={{ backgroundColor: t.accent, boxShadow: `0 0 12px ${t.accent}` }} />
+                          <span className="font-black uppercase text-white">{t.name}</span>
+                        </div>
+                        <p className="mt-1 text-xs text-white/70">{t.description}</p>
+                        {active && <span className="absolute right-2 top-2 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold uppercase text-black">active</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </Section>
+
+              <Section title="Card style">
+                <div className="space-y-5">
+                  <div>
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                      Card transparency · {Math.round(profile.card_opacity * 100)}%
+                    </Label>
+                    <Slider min={0} max={1} step={0.05} value={[profile.card_opacity]}
+                      onValueChange={(v) => patch("card_opacity", v[0])} className="mt-3" />
+                  </div>
+                  <div>
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                      Glass blur · {profile.blur_amount}px
+                    </Label>
+                    <Slider min={0} max={40} step={1} value={[profile.blur_amount]}
+                      onValueChange={(v) => patch("blur_amount", v[0])} className="mt-3" />
+                  </div>
+                  <Toggle label="Neon glow text" hint="Makes your name + bio glow in your accent color."
+                    checked={profile.glow_text} onChange={(v) => patch("glow_text", v)} />
+                </div>
+              </Section>
+            </>
+          )}
+
+          {tab === "effects" && (
+            <>
+              <Section title="Particle effect">
+                <div className="flex flex-wrap gap-2">
+                  {EFFECT_OPTIONS.map((e) => (
+                    <button key={e} type="button" onClick={() => patch("effect", e)}
+                      className={`rounded-md border px-3 py-2 text-sm font-bold uppercase tracking-wider ${profile.effect === e ? "border-primary bg-primary/20 text-primary glow-crime" : "border-border text-muted-foreground hover:border-primary/40"}`}>
+                      {e}
+                    </button>
+                  ))}
+                </div>
+              </Section>
+              <Section title="Overlays">
+                <div className="space-y-3">
+                  <Toggle label="Cursor trail" hint="Glowing trail that follows the cursor."
+                    checked={profile.cursor_trail} onChange={(v) => patch("cursor_trail", v)} />
+                  <Toggle label="VHS scanlines" hint="Retro scanline overlay."
+                    checked={profile.scanlines} onChange={(v) => patch("scanlines", v)} />
+                  <Toggle label="Music visualizer" hint="Audio-reactive bars at the bottom (needs music)."
+                    checked={profile.visualizer} onChange={(v) => patch("visualizer", v)} />
+                </div>
+              </Section>
+              <Section title="Intro splash">
+                <div className="space-y-3">
+                  <Toggle label="Show click-to-enter screen" hint="Required for music autoplay."
+                    checked={profile.intro_enabled} onChange={(v) => patch("intro_enabled", v)} />
+                  <Field label="Intro text">
+                    <Input value={profile.intro_text ?? ""} onChange={(e) => patch("intro_text", e.target.value)}
+                      placeholder="click to enter" />
+                  </Field>
+                </div>
+              </Section>
+            </>
+          )}
+
+          {tab === "handle" && (
+            <Section title="Your handle">
+              <p className="text-sm text-muted-foreground">
+                Public URL:{" "}
+                <a href={`/u/${profile.handle}`} target="_blank" rel="noreferrer"
+                  className="font-bold text-primary underline">
+                  crime.gg/u/{profile.handle}
+                </a>
+              </p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <Stat label="Total views" value={profile.views.toLocaleString()} />
+                <Stat label="Plan" value={profile.plan} />
+              </div>
+              <p className="mt-4 text-xs text-muted-foreground">
+                Handle changes aren't supported yet — drop us a line.
+              </p>
+            </Section>
+          )}
+
+          {tab === "tools" && (
+            <Section title="Tools">
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" onClick={downloadJSON}>
+                  <Download className="h-4 w-4" /> Export profile JSON
+                </Button>
+                <Button variant="outline" onClick={undoChanges} disabled={!dirty}>
+                  Undo unsaved changes
+                </Button>
+              </div>
+            </Section>
+          )}
+
+          {/* Links live below the active tab on every screen */}
+          <Section title="Links">
+            <div className="mb-4 flex justify-end">
+              <Button onClick={addLink} size="sm"><Plus className="mr-1 h-4 w-4" /> Add link</Button>
+            </div>
+            <div className="space-y-3">
+              {links.length === 0 && (
+                <p className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+                  No links yet.
+                </p>
+              )}
+              {links.map((l) => (
+                <div key={l.id} className="flex gap-2 rounded-xl border border-border bg-input/30 p-3">
+                  <div className="grid flex-1 gap-2 sm:grid-cols-[200px_1fr]">
+                    <Input value={l.label} onChange={(e) => updateLink(l.id, { label: e.target.value })}
+                      onBlur={() => commitLink(l)} placeholder="Label" />
+                    <Input value={l.url} onChange={(e) => updateLink(l.id, { url: e.target.value })}
+                      onBlur={() => commitLink(l)} placeholder="https://" />
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => deleteLink(l.id)}>
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </Section>
         </div>
 
-        <Section title="Identity">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Display name">
-              <Input value={profile.display_name ?? ""} onChange={(e) => patch("display_name", e.target.value)} />
-            </Field>
-            <Field label="Accent color">
-              <Input type="color" value={profile.accent_color ?? "#ef4444"} className="h-10 p-1"
-                onChange={(e) => patch("accent_color", e.target.value)} />
-            </Field>
-            <Field label="Bio" full>
-              <Textarea rows={3} value={profile.bio ?? ""} onChange={(e) => patch("bio", e.target.value)} />
-            </Field>
+        {/* Live preview */}
+        <aside className="lg:sticky lg:top-20 lg:h-fit">
+          <div className="mb-2 flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Live preview</h3>
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground">updates instantly</span>
           </div>
-        </Section>
+          <LivePreview profile={profile} links={links} />
+        </aside>
+      </main>
 
-        <Section title="Media">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FileSlot label="Avatar (jpg, png, gif)" accept="image/*" userId={profile.id} kind="avatar"
-              currentUrl={profile.avatar_url} onUploaded={(u) => patch("avatar_url", u)} preview="image" />
-            <div className="space-y-2">
-              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Background type</Label>
-              <div className="flex gap-2">
-                {(["image", "video"] as const).map((t) => (
-                  <button key={t} type="button" onClick={() => patch("background_type", t)}
-                    className={`flex-1 rounded-md border px-3 py-2 text-sm font-bold uppercase tracking-wider ${profile.background_type === t ? "border-primary bg-primary/20 text-primary" : "border-border text-muted-foreground"}`}>
-                    {t}
-                  </button>
-                ))}
-              </div>
-              <FileSlot label={profile.background_type === "video" ? "Background video (mp4, webm)" : "Background image"}
-                accept={profile.background_type === "video" ? "video/*" : "image/*"}
-                userId={profile.id} kind="background"
-                currentUrl={profile.background_url} onUploaded={(u) => patch("background_url", u)}
-                preview={profile.background_type === "video" ? "video" : "image"} />
-            </div>
-            <FileSlot label="Background music (mp3, ogg)" accept="audio/*" userId={profile.id} kind="music"
-              currentUrl={profile.music_url} onUploaded={(u) => patch("music_url", u)} preview="audio" />
-            <FileSlot label="Custom cursor (png, 32×32 recommended)" accept="image/png,image/gif" userId={profile.id} kind="cursor"
-              currentUrl={profile.cursor_url} onUploaded={(u) => patch("cursor_url", u)} preview="image" />
-            <FileSlot label="Custom font (woff2, ttf, otf)" accept=".woff2,.woff,.ttf,.otf,font/*"
-              userId={profile.id} kind="font"
-              currentUrl={profile.font_url} onUploaded={(u) => patch("font_url", u)} />
-            <Field label="Font family name (any name)">
-              <Input value={profile.font_family ?? ""} placeholder="MyFont"
-                onChange={(e) => patch("font_family", e.target.value)} />
-            </Field>
-          </div>
-        </Section>
+      <div className="sticky bottom-4 z-20 mx-auto flex max-w-7xl justify-end px-4">
+        <Button onClick={saveProfile} size="lg" disabled={!dirty}
+          className="glow-crime font-bold uppercase tracking-wider shadow-2xl">
+          {dirty ? "Save all changes" : "Saved"}
+        </Button>
+      </div>
+    </div>
+  );
+}
 
-        <Section title="Effects">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="sm:col-span-2">
-              <Label className="text-xs uppercase tracking-wider text-muted-foreground">Profile effect</Label>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {EFFECT_OPTIONS.map((e) => (
-                  <button key={e} type="button" onClick={() => patch("effect", e)}
-                    className={`rounded-md border px-3 py-2 text-sm font-bold uppercase tracking-wider ${profile.effect === e ? "border-primary bg-primary/20 text-primary glow-crime" : "border-border text-muted-foreground hover:border-primary/40"}`}>
-                    {e}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="sm:col-span-2">
-              <Label className="text-xs uppercase tracking-wider text-muted-foreground">
-                Card transparency · {Math.round(profile.card_opacity * 100)}%
-              </Label>
-              <Slider min={0} max={1} step={0.05} value={[profile.card_opacity]}
-                onValueChange={(v) => patch("card_opacity", v[0])} className="mt-3" />
-              <p className="mt-1 text-xs text-muted-foreground">0% = fully see-through · 100% = solid</p>
-            </div>
+function LivePreview({ profile, links }: { profile: Profile; links: LinkRow[] }) {
+  const accent = profile.accent_color || "#ef4444";
+  const theme = THEMES.find((t) => t.id === profile.theme);
+  const bg = theme?.bgGradient || `radial-gradient(circle at 50%, ${accent}33, #0a0a0a 70%)`;
+  const cardBg = `rgba(0,0,0,${profile.card_opacity ?? 0.5})`;
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-border" style={{ background: bg, minHeight: 460 }}>
+      {profile.background_url && profile.background_type === "image" && (
+        <img src={profile.background_url} alt="" className="absolute inset-0 h-full w-full object-cover opacity-80" />
+      )}
+      {profile.scanlines && (
+        <div className="pointer-events-none absolute inset-0 opacity-20"
+          style={{ backgroundImage: "repeating-linear-gradient(0deg, rgba(0,0,0,0.4) 0, rgba(0,0,0,0.4) 1px, transparent 1px, transparent 3px)" }} />
+      )}
+      <div className="relative z-10 p-5">
+        <div className="rounded-2xl border p-5 text-center text-white shadow-xl"
+          style={{ backgroundColor: cardBg, borderColor: `${accent}55`, backdropFilter: `blur(${profile.blur_amount}px)` }}>
+          <div className="mx-auto h-20 w-20 overflow-hidden rounded-full border-2"
+            style={{ borderColor: accent, boxShadow: `0 0 40px -5px ${accent}` }}>
+            {profile.avatar_url
+              ? <img src={profile.avatar_url} alt="" className="h-full w-full object-cover" />
+              : <div className="flex h-full w-full items-center justify-center bg-black text-3xl font-black">{profile.handle.charAt(0).toUpperCase()}</div>}
           </div>
-        </Section>
-
-        <Section title="Intro splash">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="font-bold">Show click-to-enter screen</p>
-              <p className="text-xs text-muted-foreground">Required for music autoplay on most browsers.</p>
+          <h2 className="mt-3 text-xl font-black"
+            style={profile.glow_text ? { textShadow: `0 0 18px ${accent}` } : undefined}>
+            {profile.display_name || profile.handle}
+          </h2>
+          <p className="text-xs opacity-70">@{profile.handle}</p>
+          {profile.badges.length > 0 && (
+            <div className="mt-2 flex flex-wrap justify-center gap-1">
+              {profile.badges.map((b) => {
+                const def = BADGE_DEFS[b]; if (!def) return null;
+                return <span key={b} className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase"
+                  style={{ backgroundColor: def.color, color: "white" }}>{def.emoji} {def.label}</span>;
+              })}
             </div>
-            <Switch checked={profile.intro_enabled} onCheckedChange={(v) => patch("intro_enabled", v)} />
-          </div>
-          <Field label="Intro text" full>
-            <Input value={profile.intro_text ?? ""} onChange={(e) => patch("intro_text", e.target.value)}
-              placeholder="click to enter" />
-          </Field>
-        </Section>
-
-        <Section title="Links">
-          <div className="mb-4 flex justify-end">
-            <Button onClick={addLink} size="sm"><Plus className="mr-1 h-4 w-4" /> Add link</Button>
-          </div>
-          <div className="space-y-3">
-            {links.length === 0 && (
-              <p className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-                No links yet.
-              </p>
-            )}
-            {links.map((l) => (
-              <div key={l.id} className="flex gap-2 rounded-xl border border-border bg-input/30 p-3">
-                <div className="grid flex-1 gap-2 sm:grid-cols-[200px_1fr]">
-                  <Input value={l.label} onChange={(e) => updateLink(l.id, { label: e.target.value })}
-                    onBlur={() => commitLink(l)} placeholder="Label" />
-                  <Input value={l.url} onChange={(e) => updateLink(l.id, { url: e.target.value })}
-                    onBlur={() => commitLink(l)} placeholder="https://" />
-                </div>
-                <Button variant="ghost" size="icon" onClick={() => deleteLink(l.id)}>
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
+          )}
+          {profile.bio && <p className="mt-3 whitespace-pre-wrap text-xs opacity-90">{profile.bio}</p>}
+          <div className="mt-4 space-y-2">
+            {links.slice(0, 5).map((l) => (
+              <div key={l.id} className="truncate rounded-lg border px-3 py-1.5 text-xs font-bold uppercase"
+                style={{ borderColor: `${accent}66`, background: `linear-gradient(135deg, ${accent}22, transparent)` }}>
+                {l.label}
               </div>
             ))}
           </div>
-        </Section>
-
-        <div className="sticky bottom-4 z-10 flex justify-end">
-          <Button onClick={saveProfile} size="lg" className="glow-crime font-bold uppercase tracking-wider">
-            Save all changes
-          </Button>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="glass rounded-2xl p-6">
-      <h2 className="mb-4 text-xl font-black uppercase tracking-tight">{title}</h2>
+    <section className="glass rounded-2xl p-5 animate-fade-in">
+      <h2 className="mb-4 text-lg font-black uppercase tracking-tight">{title}</h2>
       {children}
     </section>
   );
@@ -262,11 +487,31 @@ function Field({ label, children, full }: { label: string; children: React.React
   );
 }
 
+function Toggle({ label, hint, checked, onChange }: { label: string; hint?: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-lg border border-border bg-input/30 p-3">
+      <div>
+        <p className="text-sm font-bold">{label}</p>
+        {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      </div>
+      <Switch checked={checked} onCheckedChange={onChange} />
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-border bg-input/30 p-4">
+      <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
+      <p className="mt-1 text-2xl font-black">{value}</p>
+    </div>
+  );
+}
+
 function FileSlot({
   label, accept, userId, kind, currentUrl, onUploaded, preview,
 }: {
-  label: string; accept: string;
-  userId: string;
+  label: string; accept: string; userId: string;
   kind: "avatar" | "background" | "music" | "cursor" | "font";
   currentUrl: string | null;
   onUploaded: (url: string) => void;
@@ -274,10 +519,9 @@ function FileSlot({
 }) {
   const ref = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
 
-  async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  async function handleFile(file: File) {
     if (file.size > 25 * 1024 * 1024) { toast.error("Max 25MB"); return; }
     setBusy(true);
     try {
@@ -292,10 +536,22 @@ function FileSlot({
     }
   }
 
+  async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) handleFile(file);
+  }
+
   return (
     <div>
       <Label className="text-xs uppercase tracking-wider text-muted-foreground">{label}</Label>
-      <div className="mt-1 flex items-center gap-3 rounded-md border border-border bg-input/30 p-2">
+      <div
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault(); setDragOver(false);
+          const f = e.dataTransfer.files?.[0]; if (f) handleFile(f);
+        }}
+        className={`mt-1 flex items-center gap-3 rounded-md border-2 border-dashed p-2 transition ${dragOver ? "border-primary bg-primary/10" : "border-border bg-input/30"}`}>
         {currentUrl && preview === "image" && (
           <img src={currentUrl} alt="" className="h-12 w-12 rounded object-cover" />
         )}
@@ -305,11 +561,11 @@ function FileSlot({
         {currentUrl && preview === "audio" && (
           <audio src={currentUrl} controls className="h-8 flex-1" />
         )}
-        {!currentUrl && <div className="h-12 w-12 rounded bg-muted" />}
+        {!currentUrl && <div className="grid h-12 w-12 place-items-center rounded bg-muted text-muted-foreground"><Upload className="h-4 w-4" /></div>}
         <input ref={ref} type="file" accept={accept} className="hidden" onChange={onPick} />
         <Button type="button" variant="outline" size="sm" disabled={busy}
-          onClick={() => ref.current?.click()}>
-          <Upload className="mr-2 h-3.5 w-3.5" /> {busy ? "Uploading..." : currentUrl ? "Replace" : "Upload"}
+          onClick={() => ref.current?.click()} className="ml-auto">
+          <Upload className="mr-2 h-3.5 w-3.5" /> {busy ? "Uploading..." : currentUrl ? "Replace" : "Drop / Upload"}
         </Button>
       </div>
     </div>

@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      guestbook: {
+        Row: {
+          author_name: string
+          created_at: string
+          id: string
+          message: string
+          profile_id: string
+        }
+        Insert: {
+          author_name: string
+          created_at?: string
+          id?: string
+          message: string
+          profile_id: string
+        }
+        Update: {
+          author_name?: string
+          created_at?: string
+          id?: string
+          message?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guestbook_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invite_codes: {
         Row: {
           code: string
@@ -76,66 +108,87 @@ export type Database = {
           avatar_url: string | null
           background_type: string
           background_url: string | null
+          badges: string[]
           bio: string | null
+          blur_amount: number
           card_opacity: number
           created_at: string
+          cursor_trail: boolean
           cursor_url: string | null
           display_name: string | null
           effect: string
           font_family: string | null
           font_url: string | null
+          glow_text: boolean
           handle: string
           id: string
           intro_enabled: boolean
           intro_text: string | null
           music_url: string | null
           plan: string
+          scanlines: boolean
+          theme: string
           updated_at: string
           views: number
+          visualizer: boolean
         }
         Insert: {
           accent_color?: string | null
           avatar_url?: string | null
           background_type?: string
           background_url?: string | null
+          badges?: string[]
           bio?: string | null
+          blur_amount?: number
           card_opacity?: number
           created_at?: string
+          cursor_trail?: boolean
           cursor_url?: string | null
           display_name?: string | null
           effect?: string
           font_family?: string | null
           font_url?: string | null
+          glow_text?: boolean
           handle: string
           id: string
           intro_enabled?: boolean
           intro_text?: string | null
           music_url?: string | null
           plan?: string
+          scanlines?: boolean
+          theme?: string
           updated_at?: string
           views?: number
+          visualizer?: boolean
         }
         Update: {
           accent_color?: string | null
           avatar_url?: string | null
           background_type?: string
           background_url?: string | null
+          badges?: string[]
           bio?: string | null
+          blur_amount?: number
           card_opacity?: number
           created_at?: string
+          cursor_trail?: boolean
           cursor_url?: string | null
           display_name?: string | null
           effect?: string
           font_family?: string | null
           font_url?: string | null
+          glow_text?: boolean
           handle?: string
           id?: string
           intro_enabled?: boolean
           intro_text?: string | null
           music_url?: string | null
           plan?: string
+          scanlines?: boolean
+          theme?: string
           updated_at?: string
           views?: number
+          visualizer?: boolean
         }
         Relationships: []
       }
@@ -144,7 +197,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      increment_profile_views: { Args: { _handle: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

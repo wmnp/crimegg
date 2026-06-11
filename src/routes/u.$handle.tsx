@@ -6,11 +6,12 @@ import {
   CursorTrail, ScanlinesOverlay, MusicVisualizer, type Effect,
 } from "@/components/profile-effects";
 import { THEMES, BADGE_DEFS } from "@/lib/themes";
-import { Volume2, VolumeX, Share2, MessageSquare, Eye } from "lucide-react";
+import { Volume2, VolumeX, Share2, MessageSquare, Eye, Tag } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { FollowButton } from "@/components/follow-button";
 
 export const Route = createFileRoute("/u/$handle")({
   loader: async ({ params }) => {
@@ -61,6 +62,7 @@ type Profile = {
   intro_enabled: boolean; intro_text: string | null;
   theme: string; glow_text: boolean; cursor_trail: boolean; scanlines: boolean;
   badges: string[]; visualizer: boolean; blur_amount: number; views: number;
+  for_sale?: boolean; sale_price?: number | null;
 };
 type LinkRow = { id: string; label: string; url: string };
 type GuestEntry = { id: string; author_name: string; message: string; created_at: string };
@@ -206,8 +208,9 @@ function ProfileView() {
               {links.length === 0 && <p className="text-sm opacity-60">No links yet.</p>}
             </div>
 
-            <div className="mt-6 flex items-center justify-center gap-3 text-xs opacity-70">
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs opacity-80">
               <span className="inline-flex items-center gap-1"><Eye className="h-3 w-3" />{profile.views.toLocaleString()}</span>
+              <FollowButton profileId={profile.id} accent={accent} />
               <button onClick={share} className="inline-flex items-center gap-1 hover:opacity-100">
                 <Share2 className="h-3 w-3" /> share
               </button>
@@ -215,6 +218,13 @@ function ProfileView() {
                 <MessageSquare className="h-3 w-3" /> guestbook ({guestbook.length})
               </button>
             </div>
+
+            {profile.for_sale && (
+              <div className="mt-4 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-bold uppercase tracking-wider animate-pulse"
+                style={{ borderColor: accent, backgroundColor: `${accent}22`, color: accent, boxShadow: `0 0 24px -6px ${accent}` }}>
+                <Tag className="h-3 w-3" /> handle for sale {profile.sale_price != null ? `· $${Number(profile.sale_price).toLocaleString()}` : "· make offer"}
+              </div>
+            )}
           </div>
 
           {showGb && (

@@ -595,3 +595,61 @@ function FileSlot({
     </div>
   );
 }
+
+function ViewBooster({ ownHandle, onBoosted }: { ownHandle: string; onBoosted: (handle: string, total: number) => void }) {
+  const [handle, setHandle] = useState(ownHandle);
+  const [amount, setAmount] = useState(1000);
+  const [busy, setBusy] = useState(false);
+  const [last, setLast] = useState<{ handle: string; total: number } | null>(null);
+
+  async function boost() {
+    const h = handle.trim().toLowerCase().replace(/^@/, "");
+    if (!h) return toast.error("Enter a handle");
+    if (amount <= 0) return toast.error("Pick a positive amount");
+    setBusy(true);
+    const { data, error } = await supabase.rpc("add_profile_views" as never, { _handle: h, _amount: Math.min(amount, 100000) } as never);
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    const total = (data as unknown as number) ?? 0;
+    if (!total) return toast.error(`No profile @${h} found`);
+    setLast({ handle: h, total });
+    onBoosted(h, total);
+    toast.success(`Added ${amount.toLocaleString()} views to @${h}`);
+  }
+
+  return (
+    <Section title="View booster">
+      <p className="text-sm text-muted-foreground">
+        Inflate the view counter on any handle. Capped at 100,000 per click.
+      </p>
+      <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_180px_auto]">
+        <div>
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">Handle</Label>
+          <Input value={handle} onChange={(e) => setHandle(e.target.value)} placeholder="someone" className="mt-1" />
+        </div>
+        <div>
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">Views to add</Label>
+          <Input type="number" min={1} max={100000} value={amount}
+            onChange={(e) => setAmount(Number(e.target.value) || 0)} className="mt-1" />
+        </div>
+        <Button onClick={boost} disabled={busy} className="self-end glow-crime font-bold uppercase">
+          {busy ? "Boosting..." : "Boost"}
+        </Button>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {[100, 1000, 10000, 100000].map((n) => (
+          <button key={n} type="button" onClick={() => setAmount(n)}
+            className="rounded-full border border-border px-3 py-1 text-xs font-bold uppercase tracking-wider hover:border-primary hover:text-primary">
+            +{n.toLocaleString()}
+          </button>
+        ))}
+      </div>
+      {last && (
+        <div className="mt-4 rounded-xl border border-primary/40 bg-primary/10 p-3 text-sm">
+          <span className="font-bold">@{last.handle}</span> now has{" "}
+          <span className="text-gradient-crime font-black">{last.total.toLocaleString()}</span> views.
+        </div>
+      )}
+    </Section>
+  );
+}

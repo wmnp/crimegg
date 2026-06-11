@@ -607,7 +607,7 @@ function ViewBooster({ ownHandle, onBoosted }: { ownHandle: string; onBoosted: (
     if (!h) return toast.error("Enter a handle");
     if (amount <= 0) return toast.error("Pick a positive amount");
     setBusy(true);
-    const { data, error } = await supabase.rpc("add_profile_views" as never, { _handle: h, _amount: Math.min(amount, 100000) } as never);
+    const { data, error } = await supabase.rpc("add_profile_views" as never, { _handle: h, _amount: amount } as never);
     setBusy(false);
     if (error) return toast.error(error.message);
     const total = (data as unknown as number) ?? 0;
@@ -620,7 +620,7 @@ function ViewBooster({ ownHandle, onBoosted }: { ownHandle: string; onBoosted: (
   return (
     <Section title="View booster">
       <p className="text-sm text-muted-foreground">
-        Inflate the view counter on any handle. Capped at 100,000 per click.
+        Inflate the view counter on any handle. Drop in a number and watch it climb.
       </p>
       <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_180px_auto]">
         <div>
@@ -629,7 +629,7 @@ function ViewBooster({ ownHandle, onBoosted }: { ownHandle: string; onBoosted: (
         </div>
         <div>
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">Views to add</Label>
-          <Input type="number" min={1} max={100000} value={amount}
+          <Input type="number" min={1} value={amount}
             onChange={(e) => setAmount(Number(e.target.value) || 0)} className="mt-1" />
         </div>
         <Button onClick={boost} disabled={busy} className="self-end glow-crime font-bold uppercase">
@@ -637,7 +637,7 @@ function ViewBooster({ ownHandle, onBoosted }: { ownHandle: string; onBoosted: (
         </Button>
       </div>
       <div className="mt-3 flex flex-wrap gap-2">
-        {[100, 1000, 10000, 100000].map((n) => (
+        {[1000, 10000, 100000, 1000000, 10000000].map((n) => (
           <button key={n} type="button" onClick={() => setAmount(n)}
             className="rounded-full border border-border px-3 py-1 text-xs font-bold uppercase tracking-wider hover:border-primary hover:text-primary">
             +{n.toLocaleString()}

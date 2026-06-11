@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
   Trash2, Plus, ExternalLink, LogOut, Upload, Download, Eye,
-  User, Image as ImageIcon, Palette, Sparkles, AtSign, Wrench,
+  User, Image as ImageIcon, Palette, Sparkles, AtSign, Wrench, TrendingUp, Tag,
 } from "lucide-react";
 import { uploadProfileMedia } from "@/lib/storage";
 import { EFFECT_OPTIONS, type Effect } from "@/components/profile-effects";
@@ -31,6 +31,7 @@ type Profile = {
   intro_enabled: boolean; intro_text: string | null;
   theme: string; glow_text: boolean; cursor_trail: boolean; scanlines: boolean;
   badges: string[]; visualizer: boolean; blur_amount: number; views: number;
+  for_sale: boolean; sale_price: number | null;
 };
 type LinkRow = { id: string; profile_id: string; label: string; url: string; sort_order: number };
 
@@ -40,6 +41,8 @@ const TABS = [
   { id: "style", label: "Style", icon: Palette },
   { id: "effects", label: "Effects", icon: Sparkles },
   { id: "handle", label: "Handle", icon: AtSign },
+  { id: "views", label: "Views", icon: TrendingUp },
+  { id: "market", label: "Market", icon: Tag },
   { id: "tools", label: "Tools", icon: Wrench },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
@@ -81,7 +84,7 @@ function Dashboard() {
   async function saveProfile() {
     if (!profile) return;
     const { id, handle, plan, views, ...rest } = profile;
-    const { error } = await supabase.from("profiles").update(rest).eq("id", id);
+    const { error } = await supabase.from("profiles").update(rest as never).eq("id", id);
     if (error) toast.error(error.message);
     else { toast.success("Saved!"); setOriginal(profile); }
   }
@@ -356,6 +359,27 @@ function Dashboard() {
             </Section>
           )}
 
+          {tab === "views" && <ViewBooster ownHandle={profile.handle} onBoosted={(h, total) => { if (h === profile.handle.toLowerCase()) { setProfile({ ...profile, views: total }); setOriginal((o) => o ? { ...o, views: total } : o); } }} />}
+
+          {tab === "market" && (
+            <Section title="List your handle for sale">
+              <p className="text-sm text-muted-foreground">
+                Toggle this on to put your handle on the public <Link to="/market" className="text-primary underline">marketplace</Link>. Buyers contact you through your profile links.
+              </p>
+              <div className="mt-4 space-y-4">
+                <Toggle label={`List @${profile.handle} on the marketplace`}
+                  hint="Your profile gets a 'for sale' badge and appears at /market."
+                  checked={profile.for_sale} onChange={(v) => patch("for_sale", v)} />
+                <Field label="Asking price (USD) — leave blank for 'make offer'">
+                  <Input type="number" min={0} step="1"
+                    value={profile.sale_price ?? ""}
+                    onChange={(e) => patch("sale_price", e.target.value === "" ? null : Number(e.target.value))}
+                    placeholder="e.g. 100" />
+                </Field>
+              </div>
+            </Section>
+          )}
+
           {tab === "tools" && (
             <Section title="Tools">
               <div className="flex flex-wrap gap-2">
@@ -569,5 +593,63 @@ function FileSlot({
         </Button>
       </div>
     </div>
+  );
+}
+
+function ViewBooster({ ownHandle, onBoosted }: { ownHandle: string; onBoosted: (handle: string, total: number) => void }) {
+  const [handle, setHandle] = useState(ownHandle);
+  const [amount, setAmount] = useState(1000);
+  const [busy, setBusy] = useState(false);
+  const [last, setLast] = useState<{ handle: string; total: number } | null>(null);
+
+  async function boost() {
+    const h = handle.trim().toLowerCase().replace(/^@/, "");
+    if (!h) return toast.error("Enter a handle");
+    if (amount <= 0) return toast.error("Pick a positive amount");
+    setBusy(true);
+    const { data, error } = await supabase.rpc("add_profile_views" as never, { _handle: h, _amount: Math.min(amount, 100000) } as never);
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    const total = (data as unknown as number) ?? 0;
+    if (!total) return toast.error(`No profile @${h} found`);
+    setLast({ handle: h, total });
+    onBoosted(h, total);
+    toast.success(`Added ${amount.toLocaleString()} views to @${h}`);
+  }
+
+  return (
+    <Section title="View booster">
+      <p className="text-sm text-muted-foreground">
+        Inflate the view counter on any handle. Capped at 100,000 per click.
+      </p>
+      <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_180px_auto]">
+        <div>
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">Handle</Label>
+          <Input value={handle} onChange={(e) => setHandle(e.target.value)} placeholder="someone" className="mt-1" />
+        </div>
+        <div>
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">Views to add</Label>
+          <Input type="number" min={1} max={100000} value={amount}
+            onChange={(e) => setAmount(Number(e.target.value) || 0)} className="mt-1" />
+        </div>
+        <Button onClick={boost} disabled={busy} className="self-end glow-crime font-bold uppercase">
+          {busy ? "Boosting..." : "Boost"}
+        </Button>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {[100, 1000, 10000, 100000].map((n) => (
+          <button key={n} type="button" onClick={() => setAmount(n)}
+            className="rounded-full border border-border px-3 py-1 text-xs font-bold uppercase tracking-wider hover:border-primary hover:text-primary">
+            +{n.toLocaleString()}
+          </button>
+        ))}
+      </div>
+      {last && (
+        <div className="mt-4 rounded-xl border border-primary/40 bg-primary/10 p-3 text-sm">
+          <span className="font-bold">@{last.handle}</span> now has{" "}
+          <span className="text-gradient-crime font-black">{last.total.toLocaleString()}</span> views.
+        </div>
+      )}
+    </Section>
   );
 }

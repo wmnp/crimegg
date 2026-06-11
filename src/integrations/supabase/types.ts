@@ -14,6 +14,32 @@ export type Database = {
   }
   public: {
     Tables: {
+      followers: {
+        Row: {
+          created_at: string
+          follower_id: string
+          profile_id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          profile_id: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "followers_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       guestbook: {
         Row: {
           author_name: string
@@ -119,6 +145,7 @@ export type Database = {
           effect: string
           font_family: string | null
           font_url: string | null
+          for_sale: boolean
           glow_text: boolean
           handle: string
           id: string
@@ -126,6 +153,7 @@ export type Database = {
           intro_text: string | null
           music_url: string | null
           plan: string
+          sale_price: number | null
           scanlines: boolean
           theme: string
           updated_at: string
@@ -148,6 +176,7 @@ export type Database = {
           effect?: string
           font_family?: string | null
           font_url?: string | null
+          for_sale?: boolean
           glow_text?: boolean
           handle: string
           id: string
@@ -155,6 +184,7 @@ export type Database = {
           intro_text?: string | null
           music_url?: string | null
           plan?: string
+          sale_price?: number | null
           scanlines?: boolean
           theme?: string
           updated_at?: string
@@ -177,6 +207,7 @@ export type Database = {
           effect?: string
           font_family?: string | null
           font_url?: string | null
+          for_sale?: boolean
           glow_text?: boolean
           handle?: string
           id?: string
@@ -184,6 +215,7 @@ export type Database = {
           intro_text?: string | null
           music_url?: string | null
           plan?: string
+          sale_price?: number | null
           scanlines?: boolean
           theme?: string
           updated_at?: string
@@ -197,6 +229,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_profile_views: {
+        Args: { _amount: number; _handle: string }
+        Returns: number
+      }
       increment_profile_views: { Args: { _handle: string }; Returns: undefined }
     }
     Enums: {

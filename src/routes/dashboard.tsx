@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
   Trash2, Plus, ExternalLink, LogOut, Upload, Download, Eye,
-  User, Image as ImageIcon, Palette, Sparkles, AtSign, Wrench,
+  User, Image as ImageIcon, Palette, Sparkles, AtSign, Wrench, TrendingUp, Tag,
 } from "lucide-react";
 import { uploadProfileMedia } from "@/lib/storage";
 import { EFFECT_OPTIONS, type Effect } from "@/components/profile-effects";
@@ -31,6 +31,7 @@ type Profile = {
   intro_enabled: boolean; intro_text: string | null;
   theme: string; glow_text: boolean; cursor_trail: boolean; scanlines: boolean;
   badges: string[]; visualizer: boolean; blur_amount: number; views: number;
+  for_sale: boolean; sale_price: number | null;
 };
 type LinkRow = { id: string; profile_id: string; label: string; url: string; sort_order: number };
 
@@ -40,6 +41,8 @@ const TABS = [
   { id: "style", label: "Style", icon: Palette },
   { id: "effects", label: "Effects", icon: Sparkles },
   { id: "handle", label: "Handle", icon: AtSign },
+  { id: "views", label: "Views", icon: TrendingUp },
+  { id: "market", label: "Market", icon: Tag },
   { id: "tools", label: "Tools", icon: Wrench },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];

@@ -84,7 +84,7 @@ function Dashboard() {
   async function saveProfile() {
     if (!profile) return;
     const { id, handle, plan, views, ...rest } = profile;
-    const { error } = await supabase.from("profiles").update(rest).eq("id", id);
+    const { error } = await supabase.from("profiles").update(rest as never).eq("id", id);
     if (error) toast.error(error.message);
     else { toast.success("Saved!"); setOriginal(profile); }
   }

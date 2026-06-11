@@ -367,7 +367,7 @@ function Dashboard() {
                 Toggle this on to put your handle on the public <Link to="/market" className="text-primary underline">marketplace</Link>. Buyers contact you through your profile links.
               </p>
               <div className="mt-4 space-y-4">
-                <Toggle label="List @{handle} on the marketplace".replace("{handle}", profile.handle)
+                <Toggle label={`List @${profile.handle} on the marketplace`}
                   hint="Your profile gets a 'for sale' badge and appears at /market."
                   checked={profile.for_sale} onChange={(v) => patch("for_sale", v)} />
                 <Field label="Asking price (USD) — leave blank for 'make offer'">

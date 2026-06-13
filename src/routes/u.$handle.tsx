@@ -28,11 +28,12 @@ export const Route = createFileRoute("/u/$handle")({
   head: ({ loaderData }) => {
     const p = loaderData?.profile;
     const name = p?.display_name || p?.handle || "profile";
+    const title = p?.custom_title || `@${p?.handle ?? "user"} — crime.gg`;
     return {
       meta: [
-        { title: `@${p?.handle ?? "user"} — crime.gg` },
+        { title },
         { name: "description", content: p?.bio || `${name} on crime.gg` },
-        { property: "og:title", content: `@${p?.handle} on crime.gg` },
+        { property: "og:title", content: title },
         { property: "og:description", content: p?.bio || `${name} on crime.gg` },
         ...(p?.avatar_url ? [{ property: "og:image", content: p.avatar_url }] : []),
       ],
@@ -63,6 +64,9 @@ type Profile = {
   theme: string; glow_text: boolean; cursor_trail: boolean; scanlines: boolean;
   badges: string[]; visualizer: boolean; blur_amount: number; views: number;
   for_sale?: boolean; sale_price?: number | null;
+  avatar_shape?: string; link_style?: string; bg_blur?: number;
+  tilt_card?: boolean; hide_views?: boolean; text_align?: string;
+  custom_title?: string | null;
 };
 type LinkRow = { id: string; label: string; url: string };
 type GuestEntry = { id: string; author_name: string; message: string; created_at: string };
@@ -114,7 +118,7 @@ function ProfileView() {
       <CustomCursorInjector url={profile.cursor_url} />
 
       {/* Background */}
-      <div className="fixed inset-0 -z-10">
+      <div className="fixed inset-0 -z-10" style={{ filter: profile.bg_blur ? `blur(${profile.bg_blur}px)` : undefined }}>
         {profile.background_type === "video" && profile.background_url ? (
           <video src={profile.background_url} autoPlay loop muted playsInline
             className="h-full w-full object-cover" />
@@ -157,12 +161,29 @@ function ProfileView() {
       )}
 
       {/* Profile content */}
-      {entered && (
-        <div className="relative z-20 mx-auto flex max-w-md flex-col items-center px-6 pt-16 pb-12 text-center text-white animate-fade-in">
-          <div className="w-full rounded-3xl border p-8 shadow-2xl"
+      {entered && (() => {
+        const shape = profile.avatar_shape || "circle";
+        const avatarRadius = shape === "square" ? "1rem" : shape === "hex" ? "0" : "9999px";
+        const avatarClip = shape === "hex"
+          ? "polygon(50% 0,93% 25%,93% 75%,50% 100%,7% 75%,7% 25%)" : undefined;
+        const align = profile.text_align || "center";
+        const linkStyle = profile.link_style || "glass";
+        const tiltClass = profile.tilt_card ? "transition-transform duration-500 hover:[transform:perspective(900px)_rotateX(4deg)_rotateY(-4deg)]" : "";
+
+        function linkSx(): React.CSSProperties {
+          if (linkStyle === "filled") return { backgroundColor: accent, borderColor: accent, color: "#fff" };
+          if (linkStyle === "outline") return { background: "transparent", borderColor: accent, color: "#fff" };
+          if (linkStyle === "gradient") return { background: `linear-gradient(135deg, ${accent}, ${accent}66)`, borderColor: "transparent", color: "#fff" };
+          return { borderColor: `${accent}66`, background: `linear-gradient(135deg, ${accent}22, transparent)` };
+        }
+
+        return (
+        <div className="relative z-20 mx-auto flex max-w-md flex-col items-center px-6 pt-16 pb-12 text-white animate-fade-in"
+             style={{ textAlign: align as React.CSSProperties["textAlign"] }}>
+          <div className={`w-full rounded-3xl border p-8 shadow-2xl ${tiltClass}`}
             style={{ backgroundColor: cardBg, borderColor: `${accent}55`, backdropFilter: `blur(${blur}px)` }}>
-            <div className="mx-auto h-32 w-32 overflow-hidden rounded-full border-4 shadow-2xl"
-              style={{ borderColor: accent, boxShadow: `0 0 60px -10px ${accent}` }}>
+            <div className="mx-auto h-32 w-32 overflow-hidden border-4 shadow-2xl"
+              style={{ borderColor: accent, boxShadow: `0 0 60px -10px ${accent}`, borderRadius: avatarRadius, clipPath: avatarClip }}>
               {profile.avatar_url
                 ? <img src={profile.avatar_url} alt={profile.handle} className="h-full w-full object-cover" />
                 : <div className="flex h-full w-full items-center justify-center bg-black text-5xl font-black">
@@ -197,11 +218,7 @@ function ProfileView() {
               {links.map((l) => (
                 <a key={l.id} href={l.url} target="_blank" rel="noreferrer noopener"
                   className="block rounded-xl border px-5 py-3 font-bold uppercase tracking-wide transition hover:scale-[1.03] hover:shadow-[0_0_30px_-5px_var(--tw-shadow-color)]"
-                  style={{
-                    borderColor: `${accent}66`,
-                    background: `linear-gradient(135deg, ${accent}22, transparent)`,
-                    ["--tw-shadow-color" as any]: accent,
-                  }}>
+                  style={{ ...linkSx(), ["--tw-shadow-color" as never]: accent }}>
                   {l.label}
                 </a>
               ))}
@@ -209,7 +226,9 @@ function ProfileView() {
             </div>
 
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs opacity-80">
-              <span className="inline-flex items-center gap-1"><Eye className="h-3 w-3" />{profile.views.toLocaleString()}</span>
+              {!profile.hide_views && (
+                <span className="inline-flex items-center gap-1"><Eye className="h-3 w-3" />{profile.views.toLocaleString()}</span>
+              )}
               <FollowButton profileId={profile.id} accent={accent} />
               <button onClick={share} className="inline-flex items-center gap-1 hover:opacity-100">
                 <Share2 className="h-3 w-3" /> share
@@ -242,7 +261,8 @@ function ProfileView() {
             powered by crime.gg
           </Link>
         </div>
-      )}
+        );
+      })()}
 
       {entered && profile.music_url && (
         <button onClick={() => setMuted((m) => !m)}

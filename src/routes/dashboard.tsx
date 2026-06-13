@@ -32,6 +32,9 @@ type Profile = {
   theme: string; glow_text: boolean; cursor_trail: boolean; scanlines: boolean;
   badges: string[]; visualizer: boolean; blur_amount: number; views: number;
   for_sale: boolean; sale_price: number | null;
+  avatar_shape: string; link_style: string; bg_blur: number;
+  tilt_card: boolean; hide_views: boolean; text_align: string;
+  particle_density: number; custom_title: string | null;
 };
 type LinkRow = { id: string; profile_id: string; label: string; url: string; sort_order: number };
 
@@ -298,8 +301,59 @@ function Dashboard() {
                     <Slider min={0} max={40} step={1} value={[profile.blur_amount]}
                       onValueChange={(v) => patch("blur_amount", v[0])} className="mt-3" />
                   </div>
+                  <div>
+                    <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+                      Background blur · {profile.bg_blur}px
+                    </Label>
+                    <Slider min={0} max={30} step={1} value={[profile.bg_blur]}
+                      onValueChange={(v) => patch("bg_blur", v[0])} className="mt-3" />
+                  </div>
                   <Toggle label="Neon glow text" hint="Makes your name + bio glow in your accent color."
                     checked={profile.glow_text} onChange={(v) => patch("glow_text", v)} />
+                  <Toggle label="3D tilt on hover" hint="Card tilts in 3D when you hover over it."
+                    checked={profile.tilt_card} onChange={(v) => patch("tilt_card", v)} />
+                  <Toggle label="Hide view counter" hint="Don't show the public view count."
+                    checked={profile.hide_views} onChange={(v) => patch("hide_views", v)} />
+                </div>
+              </Section>
+
+              <Section title="Layout & text">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="Avatar shape">
+                    <div className="flex gap-2">
+                      {(["circle", "square", "hex"] as const).map((s) => (
+                        <button key={s} type="button" onClick={() => patch("avatar_shape", s)}
+                          className={`flex-1 rounded-md border px-3 py-2 text-xs font-bold uppercase ${profile.avatar_shape === s ? "border-primary bg-primary/20 text-primary" : "border-border text-muted-foreground"}`}>
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </Field>
+                  <Field label="Text alignment">
+                    <div className="flex gap-2">
+                      {(["left", "center", "right"] as const).map((a) => (
+                        <button key={a} type="button" onClick={() => patch("text_align", a)}
+                          className={`flex-1 rounded-md border px-3 py-2 text-xs font-bold uppercase ${profile.text_align === a ? "border-primary bg-primary/20 text-primary" : "border-border text-muted-foreground"}`}>
+                          {a}
+                        </button>
+                      ))}
+                    </div>
+                  </Field>
+                  <Field label="Link button style" full>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      {(["glass", "filled", "outline", "gradient"] as const).map((s) => (
+                        <button key={s} type="button" onClick={() => patch("link_style", s)}
+                          className={`rounded-md border px-3 py-2 text-xs font-bold uppercase ${profile.link_style === s ? "border-primary bg-primary/20 text-primary" : "border-border text-muted-foreground"}`}>
+                          {s}
+                        </button>
+                      ))}
+                    </div>
+                  </Field>
+                  <Field label="Custom browser tab title (leaves blank = default)" full>
+                    <Input value={profile.custom_title ?? ""} maxLength={60}
+                      onChange={(e) => patch("custom_title", e.target.value || null)}
+                      placeholder="@you — crime.gg" />
+                  </Field>
                 </div>
               </Section>
             </>

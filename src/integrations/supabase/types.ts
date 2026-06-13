@@ -128,19 +128,46 @@ export type Database = {
           },
         ]
       }
+      pending_signups: {
+        Row: {
+          created_at: string
+          email: string
+          handle: string
+          invite_code: string
+          password: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          handle: string
+          invite_code: string
+          password: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          handle?: string
+          invite_code?: string
+          password?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           accent_color: string | null
+          avatar_shape: string
           avatar_url: string | null
           background_type: string
           background_url: string | null
           badges: string[]
+          bg_blur: number
           bio: string | null
           blur_amount: number
           card_opacity: number
           created_at: string
           cursor_trail: boolean
           cursor_url: string | null
+          custom_title: string | null
           display_name: string | null
           effect: string
           font_family: string | null
@@ -148,30 +175,38 @@ export type Database = {
           for_sale: boolean
           glow_text: boolean
           handle: string
+          hide_views: boolean
           id: string
           intro_enabled: boolean
           intro_text: string | null
+          link_style: string
           music_url: string | null
+          particle_density: number
           plan: string
           sale_price: number | null
           scanlines: boolean
+          text_align: string
           theme: string
+          tilt_card: boolean
           updated_at: string
           views: number
           visualizer: boolean
         }
         Insert: {
           accent_color?: string | null
+          avatar_shape?: string
           avatar_url?: string | null
           background_type?: string
           background_url?: string | null
           badges?: string[]
+          bg_blur?: number
           bio?: string | null
           blur_amount?: number
           card_opacity?: number
           created_at?: string
           cursor_trail?: boolean
           cursor_url?: string | null
+          custom_title?: string | null
           display_name?: string | null
           effect?: string
           font_family?: string | null
@@ -179,30 +214,38 @@ export type Database = {
           for_sale?: boolean
           glow_text?: boolean
           handle: string
+          hide_views?: boolean
           id: string
           intro_enabled?: boolean
           intro_text?: string | null
+          link_style?: string
           music_url?: string | null
+          particle_density?: number
           plan?: string
           sale_price?: number | null
           scanlines?: boolean
+          text_align?: string
           theme?: string
+          tilt_card?: boolean
           updated_at?: string
           views?: number
           visualizer?: boolean
         }
         Update: {
           accent_color?: string | null
+          avatar_shape?: string
           avatar_url?: string | null
           background_type?: string
           background_url?: string | null
           badges?: string[]
+          bg_blur?: number
           bio?: string | null
           blur_amount?: number
           card_opacity?: number
           created_at?: string
           cursor_trail?: boolean
           cursor_url?: string | null
+          custom_title?: string | null
           display_name?: string | null
           effect?: string
           font_family?: string | null
@@ -210,14 +253,19 @@ export type Database = {
           for_sale?: boolean
           glow_text?: boolean
           handle?: string
+          hide_views?: boolean
           id?: string
           intro_enabled?: boolean
           intro_text?: string | null
+          link_style?: string
           music_url?: string | null
+          particle_density?: number
           plan?: string
           sale_price?: number | null
           scanlines?: boolean
+          text_align?: string
           theme?: string
+          tilt_card?: boolean
           updated_at?: string
           views?: number
           visualizer?: boolean

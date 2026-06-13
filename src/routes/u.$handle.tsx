@@ -118,7 +118,7 @@ function ProfileView() {
       <CustomCursorInjector url={profile.cursor_url} />
 
       {/* Background */}
-      <div className="fixed inset-0 -z-10">
+      <div className="fixed inset-0 -z-10" style={{ filter: profile.bg_blur ? `blur(${profile.bg_blur}px)` : undefined }}>
         {profile.background_type === "video" && profile.background_url ? (
           <video src={profile.background_url} autoPlay loop muted playsInline
             className="h-full w-full object-cover" />

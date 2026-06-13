@@ -161,12 +161,29 @@ function ProfileView() {
       )}
 
       {/* Profile content */}
-      {entered && (
-        <div className="relative z-20 mx-auto flex max-w-md flex-col items-center px-6 pt-16 pb-12 text-center text-white animate-fade-in">
-          <div className="w-full rounded-3xl border p-8 shadow-2xl"
+      {entered && (() => {
+        const shape = profile.avatar_shape || "circle";
+        const avatarRadius = shape === "square" ? "1rem" : shape === "hex" ? "0" : "9999px";
+        const avatarClip = shape === "hex"
+          ? "polygon(50% 0,93% 25%,93% 75%,50% 100%,7% 75%,7% 25%)" : undefined;
+        const align = profile.text_align || "center";
+        const linkStyle = profile.link_style || "glass";
+        const tiltClass = profile.tilt_card ? "transition-transform duration-500 hover:[transform:perspective(900px)_rotateX(4deg)_rotateY(-4deg)]" : "";
+
+        function linkSx(): React.CSSProperties {
+          if (linkStyle === "filled") return { backgroundColor: accent, borderColor: accent, color: "#fff" };
+          if (linkStyle === "outline") return { background: "transparent", borderColor: accent, color: "#fff" };
+          if (linkStyle === "gradient") return { background: `linear-gradient(135deg, ${accent}, ${accent}66)`, borderColor: "transparent", color: "#fff" };
+          return { borderColor: `${accent}66`, background: `linear-gradient(135deg, ${accent}22, transparent)` };
+        }
+
+        return (
+        <div className="relative z-20 mx-auto flex max-w-md flex-col items-center px-6 pt-16 pb-12 text-white animate-fade-in"
+             style={{ textAlign: align as React.CSSProperties["textAlign"] }}>
+          <div className={`w-full rounded-3xl border p-8 shadow-2xl ${tiltClass}`}
             style={{ backgroundColor: cardBg, borderColor: `${accent}55`, backdropFilter: `blur(${blur}px)` }}>
-            <div className="mx-auto h-32 w-32 overflow-hidden rounded-full border-4 shadow-2xl"
-              style={{ borderColor: accent, boxShadow: `0 0 60px -10px ${accent}` }}>
+            <div className="mx-auto h-32 w-32 overflow-hidden border-4 shadow-2xl"
+              style={{ borderColor: accent, boxShadow: `0 0 60px -10px ${accent}`, borderRadius: avatarRadius, clipPath: avatarClip }}>
               {profile.avatar_url
                 ? <img src={profile.avatar_url} alt={profile.handle} className="h-full w-full object-cover" />
                 : <div className="flex h-full w-full items-center justify-center bg-black text-5xl font-black">
@@ -201,11 +218,7 @@ function ProfileView() {
               {links.map((l) => (
                 <a key={l.id} href={l.url} target="_blank" rel="noreferrer noopener"
                   className="block rounded-xl border px-5 py-3 font-bold uppercase tracking-wide transition hover:scale-[1.03] hover:shadow-[0_0_30px_-5px_var(--tw-shadow-color)]"
-                  style={{
-                    borderColor: `${accent}66`,
-                    background: `linear-gradient(135deg, ${accent}22, transparent)`,
-                    ["--tw-shadow-color" as any]: accent,
-                  }}>
+                  style={{ ...linkSx(), ["--tw-shadow-color" as never]: accent }}>
                   {l.label}
                 </a>
               ))}
@@ -213,7 +226,9 @@ function ProfileView() {
             </div>
 
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs opacity-80">
-              <span className="inline-flex items-center gap-1"><Eye className="h-3 w-3" />{profile.views.toLocaleString()}</span>
+              {!profile.hide_views && (
+                <span className="inline-flex items-center gap-1"><Eye className="h-3 w-3" />{profile.views.toLocaleString()}</span>
+              )}
               <FollowButton profileId={profile.id} accent={accent} />
               <button onClick={share} className="inline-flex items-center gap-1 hover:opacity-100">
                 <Share2 className="h-3 w-3" /> share

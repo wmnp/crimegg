@@ -261,7 +261,8 @@ function ProfileView() {
             powered by crime.gg
           </Link>
         </div>
-      )}
+        );
+      })()}
 
       {entered && profile.music_url && (
         <button onClick={() => setMuted((m) => !m)}

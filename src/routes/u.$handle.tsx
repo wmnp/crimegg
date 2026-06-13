@@ -64,6 +64,9 @@ type Profile = {
   theme: string; glow_text: boolean; cursor_trail: boolean; scanlines: boolean;
   badges: string[]; visualizer: boolean; blur_amount: number; views: number;
   for_sale?: boolean; sale_price?: number | null;
+  avatar_shape?: string; link_style?: string; bg_blur?: number;
+  tilt_card?: boolean; hide_views?: boolean; text_align?: string;
+  custom_title?: string | null;
 };
 type LinkRow = { id: string; label: string; url: string };
 type GuestEntry = { id: string; author_name: string; message: string; created_at: string };

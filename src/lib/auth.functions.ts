@@ -42,7 +42,6 @@ export const startSignup = createServerFn({ method: "POST" })
 
     const { error } = await supabaseAdmin
       .from("pending_signups")
-      // @ts-expect-error - table types may not be regenerated yet
       .upsert({ email, password: data.password, handle, invite_code: data.inviteCode });
     if (error) throw new Error(error.message);
     return { ok: true };
@@ -63,12 +62,10 @@ export const finishSignup = createServerFn({ method: "POST" })
 
     const { data: pending } = await supabaseAdmin
       .from("pending_signups")
-      // @ts-expect-error - table types may not be regenerated yet
       .select("email, password, handle, invite_code")
       .eq("email", email)
       .maybeSingle();
     if (!pending) throw new Error("No pending signup for this email");
-    // @ts-expect-error - row shape from upsert above
     const { password, handle, invite_code } = pending;
 
     // Re-check handle (race-safe)
@@ -99,7 +96,6 @@ export const finishSignup = createServerFn({ method: "POST" })
 
     // Clean up pending row
     await supabaseAdmin.from("pending_signups")
-      // @ts-expect-error - table types may not be regenerated yet
       .delete().eq("email", email);
 
     return { ok: true, handle };

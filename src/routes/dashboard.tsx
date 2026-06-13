@@ -32,6 +32,9 @@ type Profile = {
   theme: string; glow_text: boolean; cursor_trail: boolean; scanlines: boolean;
   badges: string[]; visualizer: boolean; blur_amount: number; views: number;
   for_sale: boolean; sale_price: number | null;
+  avatar_shape: string; link_style: string; bg_blur: number;
+  tilt_card: boolean; hide_views: boolean; text_align: string;
+  particle_density: number; custom_title: string | null;
 };
 type LinkRow = { id: string; profile_id: string; label: string; url: string; sort_order: number };
 

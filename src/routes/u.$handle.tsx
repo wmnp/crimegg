@@ -28,11 +28,12 @@ export const Route = createFileRoute("/u/$handle")({
   head: ({ loaderData }) => {
     const p = loaderData?.profile;
     const name = p?.display_name || p?.handle || "profile";
+    const title = p?.custom_title || `@${p?.handle ?? "user"} — crime.gg`;
     return {
       meta: [
-        { title: `@${p?.handle ?? "user"} — crime.gg` },
+        { title },
         { name: "description", content: p?.bio || `${name} on crime.gg` },
-        { property: "og:title", content: `@${p?.handle} on crime.gg` },
+        { property: "og:title", content: title },
         { property: "og:description", content: p?.bio || `${name} on crime.gg` },
         ...(p?.avatar_url ? [{ property: "og:image", content: p.avatar_url }] : []),
       ],

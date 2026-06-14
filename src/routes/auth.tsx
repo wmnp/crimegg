@@ -4,10 +4,9 @@ import { useServerFn } from "@tanstack/react-start";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { startSignup, finishSignup } from "@/lib/auth.functions";
+import { signupNow } from "@/lib/auth.functions";
 import { Header, Footer } from "./index";
 
 export const Route = createFileRoute("/auth")({
@@ -31,7 +30,7 @@ function AuthPage() {
             {mode === "signup" ? "claim your handle" : "welcome back"}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            {mode === "signup" ? "Invite code + email verification required." : "Sign in to run your profile."}
+            {mode === "signup" ? "Invite code required." : "Sign in to run your profile."}
           </p>
         </div>
         <div className="glass rounded-2xl p-6">
@@ -57,99 +56,32 @@ function AuthPage() {
   );
 }
 
-type Step = "form" | "verify";
-
 function SignUp() {
   const navigate = useNavigate();
-  const startFn = useServerFn(startSignup);
-  const finishFn = useServerFn(finishSignup);
+  const signupFn = useServerFn(signupNow);
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState<Step>("form");
-  const [code, setCode] = useState("");
   const [form, setForm] = useState({ handle: "", email: "", password: "", inviteCode: "" });
 
-  async function sendCode(e: React.FormEvent) {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     try {
-      await startFn({ data: { ...form, handle: form.handle.toLowerCase(), email: form.email.toLowerCase() } });
-      const { error } = await supabase.auth.signInWithOtp({
-        email: form.email.toLowerCase(),
-        options: { shouldCreateUser: true },
-      });
+      const email = form.email.toLowerCase();
+      const handle = form.handle.toLowerCase();
+      await signupFn({ data: { ...form, handle, email } });
+      const { error } = await supabase.auth.signInWithPassword({ email, password: form.password });
       if (error) throw error;
-      toast.success(`Code sent to ${form.email}`);
-      setStep("verify");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not send code");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function verifyAndFinish(e: React.FormEvent) {
-    e.preventDefault();
-    if (code.length < 6) return toast.error("Enter the 6-digit code");
-    setLoading(true);
-    try {
-      const { error } = await supabase.auth.verifyOtp({
-        email: form.email.toLowerCase(),
-        token: code,
-        type: "email",
-      });
-      if (error) throw error;
-      await finishFn({});
-      toast.success(`Welcome, @${form.handle}`);
+      toast.success(`Welcome, @${handle}`);
       navigate({ to: "/dashboard" });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Verification failed");
+      toast.error(err instanceof Error ? err.message : "Signup failed");
     } finally {
       setLoading(false);
     }
-  }
-
-  async function resend() {
-    setLoading(true);
-    const { error } = await supabase.auth.signInWithOtp({
-      email: form.email.toLowerCase(),
-      options: { shouldCreateUser: true },
-    });
-    setLoading(false);
-    if (error) toast.error(error.message);
-    else toast.success("New code sent");
-  }
-
-  if (step === "verify") {
-    return (
-      <form onSubmit={verifyAndFinish} className="space-y-4">
-        <div className="text-center">
-          <p className="text-sm text-muted-foreground">
-            We emailed a 6-digit code to
-          </p>
-          <p className="font-mono text-sm font-bold">{form.email}</p>
-        </div>
-        <div className="flex justify-center">
-          <InputOTP maxLength={6} value={code} onChange={setCode}>
-            <InputOTPGroup>
-              {[0,1,2,3,4,5].map((i) => (
-                <InputOTPSlot key={i} index={i} className="h-12 w-10 text-lg font-bold" />
-              ))}
-            </InputOTPGroup>
-          </InputOTP>
-        </div>
-        <Button type="submit" disabled={loading || code.length < 6} className="glow-crime w-full font-bold uppercase tracking-wider">
-          {loading ? "Verifying..." : "Verify & claim"}
-        </Button>
-        <div className="flex justify-between text-xs">
-          <button type="button" onClick={() => setStep("form")} className="text-muted-foreground hover:text-foreground">← back</button>
-          <button type="button" onClick={resend} disabled={loading} className="text-primary hover:underline">resend code</button>
-        </div>
-      </form>
-    );
   }
 
   return (
-    <form onSubmit={sendCode} className="space-y-4">
+    <form onSubmit={onSubmit} className="space-y-4">
       <div>
         <Label htmlFor="handle">Handle</Label>
         <div className="mt-1 flex items-center rounded-md border border-input bg-input/50 focus-within:ring-2 focus-within:ring-ring">
@@ -177,7 +109,7 @@ function SignUp() {
           placeholder="enter your code" className="mt-1 font-mono uppercase" />
       </div>
       <Button type="submit" disabled={loading} className="glow-crime w-full font-bold uppercase tracking-wider">
-        {loading ? "Sending code..." : "Send verification code"}
+        {loading ? "Creating account..." : "Claim handle"}
       </Button>
     </form>
   );

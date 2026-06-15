@@ -779,3 +779,67 @@ function ViewBooster({ ownHandle, onBoosted }: { ownHandle: string; onBoosted: (
     </Section>
   );
 }
+
+function DiscordPanel({ profile, onUpdate }: { profile: Profile; onUpdate: (p: Profile) => void }) {
+  const buildUrl = useServerFn(buildDiscordOAuthUrl);
+  const sync = useServerFn(syncDiscordBadges);
+  const unlink = useServerFn(unlinkDiscord);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  async function link() {
+    setBusy("link");
+    try { const { url } = await buildUrl(); window.location.href = url; }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); setBusy(null); }
+  }
+  async function doSync() {
+    setBusy("sync");
+    try {
+      const { badges, granted } = await sync();
+      onUpdate({ ...profile, badges });
+      toast.success(granted.length ? `Synced: ${granted.join(", ")}` : "No matching roles found");
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
+    finally { setBusy(null); }
+  }
+  async function doUnlink() {
+    setBusy("unlink");
+    try { await unlink(); onUpdate({ ...profile, discord_id: null, discord_username: null }); toast.success("Discord unlinked"); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
+    finally { setBusy(null); }
+  }
+
+  return (
+    <>
+      <Section title="Discord">
+        <p className="text-sm text-muted-foreground">
+          Link your Discord account and we'll grant the matching badges based on your roles in our server.
+        </p>
+        <div className="mt-4 rounded-xl border border-[#5865F2]/30 bg-[#5865F2]/5 p-4">
+          {profile.discord_id ? (
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">Linked as</p>
+                <p className="font-bold">@{profile.discord_username || profile.discord_id}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={doSync} disabled={busy === "sync"} className="bg-[#5865F2] text-white hover:bg-[#4752c4]">
+                  <RealBadge size={16} color="#1d8bf8" glyph="✓" label="sync" /> {busy === "sync" ? "Syncing..." : "Sync badges"}
+                </Button>
+                <Button variant="outline" onClick={doUnlink} disabled={busy === "unlink"}>Unlink</Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm">Not linked yet.</p>
+              <Button onClick={link} disabled={busy === "link"} className="bg-[#5865F2] text-white hover:bg-[#4752c4]">
+                {busy === "link" ? "Opening Discord..." : "Link Discord"}
+              </Button>
+            </div>
+          )}
+        </div>
+        <p className="mt-3 text-xs text-muted-foreground">
+          Need a role? Join the server: <a href={DISCORD_INVITE} target="_blank" rel="noreferrer" className="text-[#7e8aff] underline">{DISCORD_INVITE}</a>
+        </p>
+      </Section>
+    </>
+  );
+}

@@ -92,6 +92,7 @@ export type Database = {
       }
       links: {
         Row: {
+          accent_color: string | null
           created_at: string
           icon: string | null
           id: string
@@ -101,6 +102,7 @@ export type Database = {
           url: string
         }
         Insert: {
+          accent_color?: string | null
           created_at?: string
           icon?: string | null
           id?: string
@@ -110,6 +112,7 @@ export type Database = {
           url: string
         }
         Update: {
+          accent_color?: string | null
           created_at?: string
           icon?: string | null
           id?: string
@@ -155,6 +158,7 @@ export type Database = {
       profiles: {
         Row: {
           accent_color: string | null
+          animated_bg: string
           avatar_shape: string
           avatar_url: string | null
           background_type: string
@@ -167,9 +171,13 @@ export type Database = {
           created_at: string
           cursor_trail: boolean
           cursor_url: string | null
+          custom_css: string | null
           custom_title: string | null
+          discord_id: string | null
+          discord_username: string | null
           display_name: string | null
           effect: string
+          emoji_rain: string | null
           font_family: string | null
           font_url: string | null
           for_sale: boolean
@@ -188,12 +196,14 @@ export type Database = {
           text_align: string
           theme: string
           tilt_card: boolean
+          uid: number | null
           updated_at: string
           views: number
           visualizer: boolean
         }
         Insert: {
           accent_color?: string | null
+          animated_bg?: string
           avatar_shape?: string
           avatar_url?: string | null
           background_type?: string
@@ -206,9 +216,13 @@ export type Database = {
           created_at?: string
           cursor_trail?: boolean
           cursor_url?: string | null
+          custom_css?: string | null
           custom_title?: string | null
+          discord_id?: string | null
+          discord_username?: string | null
           display_name?: string | null
           effect?: string
+          emoji_rain?: string | null
           font_family?: string | null
           font_url?: string | null
           for_sale?: boolean
@@ -227,12 +241,14 @@ export type Database = {
           text_align?: string
           theme?: string
           tilt_card?: boolean
+          uid?: number | null
           updated_at?: string
           views?: number
           visualizer?: boolean
         }
         Update: {
           accent_color?: string | null
+          animated_bg?: string
           avatar_shape?: string
           avatar_url?: string | null
           background_type?: string
@@ -245,9 +261,13 @@ export type Database = {
           created_at?: string
           cursor_trail?: boolean
           cursor_url?: string | null
+          custom_css?: string | null
           custom_title?: string | null
+          discord_id?: string | null
+          discord_username?: string | null
           display_name?: string | null
           effect?: string
+          emoji_rain?: string | null
           font_family?: string | null
           font_url?: string | null
           for_sale?: boolean
@@ -266,6 +286,7 @@ export type Database = {
           text_align?: string
           theme?: string
           tilt_card?: boolean
+          uid?: number | null
           updated_at?: string
           views?: number
           visualizer?: boolean

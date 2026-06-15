@@ -128,7 +128,8 @@ function Dashboard() {
     setLinks(links.map((l) => l.id === id ? { ...l, ...patch } : l));
   }
   async function commitLink(link: LinkRow) {
-    const { error } = await supabase.from("links").update({ label: link.label, url: link.url }).eq("id", link.id);
+    const { error } = await supabase.from("links")
+      .update({ label: link.label, url: link.url, accent_color: link.accent_color, icon: link.icon }).eq("id", link.id);
     if (error) toast.error(error.message);
   }
   async function deleteLink(id: string) {
@@ -517,16 +518,29 @@ function Dashboard() {
                 </p>
               )}
               {links.map((l) => (
-                <div key={l.id} className="flex gap-2 rounded-xl border border-border bg-input/30 p-3">
-                  <div className="grid flex-1 gap-2 sm:grid-cols-[200px_1fr]">
+                <div key={l.id} className="flex flex-col gap-2 rounded-xl border border-border bg-input/30 p-3 sm:flex-row sm:items-center">
+                  <div className="grid flex-1 gap-2 sm:grid-cols-[160px_1fr]">
                     <Input value={l.label} onChange={(e) => updateLink(l.id, { label: e.target.value })}
                       onBlur={() => commitLink(l)} placeholder="Label" />
                     <Input value={l.url} onChange={(e) => updateLink(l.id, { url: e.target.value })}
                       onBlur={() => commitLink(l)} placeholder="https://" />
                   </div>
-                  <Button variant="ghost" size="icon" onClick={() => deleteLink(l.id)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <label className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Color
+                      <input type="color" value={l.accent_color ?? "#ef4444"}
+                        onChange={(e) => updateLink(l.id, { accent_color: e.target.value })}
+                        onBlur={() => commitLink(l)}
+                        className="h-8 w-10 cursor-pointer rounded border border-border bg-transparent" />
+                    </label>
+                    <Input value={l.icon ?? ""} maxLength={2} placeholder="🔥"
+                      onChange={(e) => updateLink(l.id, { icon: e.target.value })}
+                      onBlur={() => commitLink(l)}
+                      className="w-14 text-center" />
+                    <Button variant="ghost" size="icon" onClick={() => deleteLink(l.id)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

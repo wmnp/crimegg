@@ -6,12 +6,14 @@ import {
   CursorTrail, ScanlinesOverlay, MusicVisualizer, type Effect,
 } from "@/components/profile-effects";
 import { THEMES, BADGE_DEFS } from "@/lib/themes";
-import { Volume2, VolumeX, Share2, MessageSquare, Eye, Tag } from "lucide-react";
+import { Volume2, VolumeX, Share2, MessageSquare, Eye, Tag, Hash } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FollowButton } from "@/components/follow-button";
+import { VerifiedBadge, RealBadge } from "@/components/badge-verified";
+import { EmojiRain, AnimatedBgStyles, ANIMATED_BG_PRESETS } from "@/components/emoji-rain";
 
 export const Route = createFileRoute("/u/$handle")({
   loader: async ({ params }) => {
@@ -67,8 +69,11 @@ type Profile = {
   avatar_shape?: string; link_style?: string; bg_blur?: number;
   tilt_card?: boolean; hide_views?: boolean; text_align?: string;
   custom_title?: string | null;
+  uid?: number | null; custom_css?: string | null;
+  animated_bg?: string | null; emoji_rain?: string | null;
+  discord_username?: string | null;
 };
-type LinkRow = { id: string; label: string; url: string };
+type LinkRow = { id: string; label: string; url: string; accent_color?: string | null; icon?: string | null };
 type GuestEntry = { id: string; author_name: string; message: string; created_at: string };
 
 function ProfileView() {
@@ -112,20 +117,25 @@ function ProfileView() {
     }
   }
 
+  const animBgClass = ANIMATED_BG_PRESETS.find((p) => p.id === (profile.animated_bg || "none"))?.css || "";
+
   return (
     <div className="relative min-h-screen overflow-hidden" style={{ fontFamily: fontStack }}>
+      {profile.custom_css && <style>{profile.custom_css}</style>}
+      <AnimatedBgStyles />
       <CustomFontInjector url={profile.font_url} family={profile.font_family} />
       <CustomCursorInjector url={profile.cursor_url} />
+      {entered && profile.emoji_rain && <EmojiRain emoji={profile.emoji_rain} density={30} />}
 
       {/* Background */}
-      <div className="fixed inset-0 -z-10" style={{ filter: profile.bg_blur ? `blur(${profile.bg_blur}px)` : undefined }}>
+      <div className={`fixed inset-0 -z-10 ${animBgClass}`} style={{ filter: profile.bg_blur ? `blur(${profile.bg_blur}px)` : undefined }}>
         {profile.background_type === "video" && profile.background_url ? (
           <video src={profile.background_url} autoPlay loop muted playsInline
             className="h-full w-full object-cover" />
         ) : profile.background_url ? (
           <img src={profile.background_url} alt="" className="h-full w-full object-cover" />
         ) : (
-          <div className="h-full w-full"
+          !animBgClass && <div className="h-full w-full"
             style={{ background: theme?.bgGradient || `radial-gradient(circle at 50% 50%, ${accent}33, #0a0a0a 70%)` }} />
         )}
         <div className="absolute inset-0 bg-black/30" />
@@ -170,13 +180,6 @@ function ProfileView() {
         const linkStyle = profile.link_style || "glass";
         const tiltClass = profile.tilt_card ? "transition-transform duration-500 hover:[transform:perspective(900px)_rotateX(4deg)_rotateY(-4deg)]" : "";
 
-        function linkSx(): React.CSSProperties {
-          if (linkStyle === "filled") return { backgroundColor: accent, borderColor: accent, color: "#fff" };
-          if (linkStyle === "outline") return { background: "transparent", borderColor: accent, color: "#fff" };
-          if (linkStyle === "gradient") return { background: `linear-gradient(135deg, ${accent}, ${accent}66)`, borderColor: "transparent", color: "#fff" };
-          return { borderColor: `${accent}66`, background: `linear-gradient(135deg, ${accent}22, transparent)` };
-        }
-
         return (
         <div className="relative z-20 mx-auto flex max-w-md flex-col items-center px-6 pt-16 pb-12 text-white animate-fade-in"
              style={{ textAlign: align as React.CSSProperties["textAlign"] }}>
@@ -194,18 +197,19 @@ function ProfileView() {
             <p className="text-sm opacity-70">@{profile.handle}</p>
 
             {profile.badges.length > 0 && (
-              <div className="mt-3 flex flex-wrap justify-center gap-1.5">
+              <div className="mt-3 flex flex-wrap justify-center gap-1.5 items-center">
                 {profile.badges.map((b) => {
                   const def = BADGE_DEFS[b]; if (!def) return null;
-                  return (
-                    <span key={b}
-                      className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-white animate-fade-in"
-                      style={{ backgroundColor: def.color, boxShadow: `0 0 18px -3px ${def.color}` }}>
-                      {def.emoji} {def.label}
-                    </span>
-                  );
+                  if (b === "verified") return <VerifiedBadge key={b} size={20} color={def.color} />;
+                  return <RealBadge key={b} size={20} color={def.color} glyph={def.glyph} label={def.label} />;
                 })}
               </div>
+            )}
+
+            {profile.uid != null && (
+              <p className="mt-2 text-[10px] uppercase tracking-[0.3em] opacity-60">
+                <Hash className="inline h-3 w-3 -mt-0.5" />UID {profile.uid}
+              </p>
             )}
 
             {profile.bio && (
@@ -215,13 +219,22 @@ function ProfileView() {
             )}
 
             <div className="mt-6 space-y-3">
-              {links.map((l) => (
-                <a key={l.id} href={l.url} target="_blank" rel="noreferrer noopener"
-                  className="block rounded-xl border px-5 py-3 font-bold uppercase tracking-wide transition hover:scale-[1.03] hover:shadow-[0_0_30px_-5px_var(--tw-shadow-color)]"
-                  style={{ ...linkSx(), ["--tw-shadow-color" as never]: accent }}>
-                  {l.label}
-                </a>
-              ))}
+              {links.map((l) => {
+                const linkAccent = l.accent_color || accent;
+                const sx = (() => {
+                  if (linkStyle === "filled") return { backgroundColor: linkAccent, borderColor: linkAccent, color: "#fff" };
+                  if (linkStyle === "outline") return { background: "transparent", borderColor: linkAccent, color: "#fff" };
+                  if (linkStyle === "gradient") return { background: `linear-gradient(135deg, ${linkAccent}, ${linkAccent}66)`, borderColor: "transparent", color: "#fff" };
+                  return { borderColor: `${linkAccent}66`, background: `linear-gradient(135deg, ${linkAccent}22, transparent)` };
+                })();
+                return (
+                  <a key={l.id} href={l.url} target="_blank" rel="noreferrer noopener"
+                    className="block rounded-xl border px-5 py-3 font-bold uppercase tracking-wide transition hover:scale-[1.03] hover:shadow-[0_0_30px_-5px_var(--tw-shadow-color)]"
+                    style={{ ...sx, ["--tw-shadow-color" as never]: linkAccent }}>
+                    {l.label}
+                  </a>
+                );
+              })}
               {links.length === 0 && <p className="text-sm opacity-60">No links yet.</p>}
             </div>
 

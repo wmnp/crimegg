@@ -8,13 +8,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
 import {
   Trash2, Plus, ExternalLink, LogOut, Upload, Download, Eye,
-  User, Image as ImageIcon, Palette, Sparkles, AtSign, Wrench, TrendingUp, Tag,
+  User, Image as ImageIcon, Palette, Sparkles, AtSign, Wrench, TrendingUp, Tag, Hash, MessageCircle,
 } from "lucide-react";
 import { uploadProfileMedia } from "@/lib/storage";
 import { EFFECT_OPTIONS, type Effect } from "@/components/profile-effects";
-import { THEMES, BADGE_DEFS } from "@/lib/themes";
+import { THEMES, BADGE_DEFS, DISCORD_INVITE } from "@/lib/themes";
+import { ANIMATED_BG_PRESETS } from "@/components/emoji-rain";
+import { VerifiedBadge, RealBadge } from "@/components/badge-verified";
+import { buildDiscordOAuthUrl, syncDiscordBadges, unlinkDiscord } from "@/lib/discord.functions";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — crime.gg" }, { name: "robots", content: "noindex" }] }),
@@ -35,14 +39,18 @@ type Profile = {
   avatar_shape: string; link_style: string; bg_blur: number;
   tilt_card: boolean; hide_views: boolean; text_align: string;
   particle_density: number; custom_title: string | null;
+  uid: number | null; custom_css: string | null;
+  animated_bg: string; emoji_rain: string | null;
+  discord_id: string | null; discord_username: string | null;
 };
-type LinkRow = { id: string; profile_id: string; label: string; url: string; sort_order: number };
+type LinkRow = { id: string; profile_id: string; label: string; url: string; sort_order: number; accent_color: string | null; icon: string | null };
 
 const TABS = [
   { id: "profile", label: "Profile", icon: User },
   { id: "media", label: "Media", icon: ImageIcon },
   { id: "style", label: "Style", icon: Palette },
   { id: "effects", label: "Effects", icon: Sparkles },
+  { id: "discord", label: "Discord", icon: MessageCircle },
   { id: "handle", label: "Handle", icon: AtSign },
   { id: "views", label: "Views", icon: TrendingUp },
   { id: "market", label: "Market", icon: Tag },
@@ -120,7 +128,8 @@ function Dashboard() {
     setLinks(links.map((l) => l.id === id ? { ...l, ...patch } : l));
   }
   async function commitLink(link: LinkRow) {
-    const { error } = await supabase.from("links").update({ label: link.label, url: link.url }).eq("id", link.id);
+    const { error } = await supabase.from("links")
+      .update({ label: link.label, url: link.url, accent_color: link.accent_color, icon: link.icon }).eq("id", link.id);
     if (error) toast.error(error.message);
   }
   async function deleteLink(id: string) {
@@ -175,7 +184,10 @@ function Dashboard() {
         <aside className="lg:sticky lg:top-20 lg:h-fit">
           <div className="mb-4">
             <h1 className="truncate text-2xl font-black uppercase">@{profile.handle}</h1>
-            <p className="text-xs text-muted-foreground">{profile.views} views</p>
+            <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+              {profile.uid != null && <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 font-bold text-primary"><Hash className="inline h-3 w-3 -mt-0.5" />UID {profile.uid}</span>}
+              <span>{profile.views} views</span>
+            </div>
           </div>
           <nav className="flex flex-wrap gap-1 lg:flex-col">
             {TABS.map((t) => {
@@ -214,15 +226,26 @@ function Dashboard() {
                 <div className="mt-2 flex flex-wrap gap-2">
                   {Object.entries(BADGE_DEFS).map(([key, b]) => {
                     const on = profile.badges.includes(key);
+                    const locked = b.source === "discord" && !on;
                     return (
-                      <button key={key} type="button" onClick={() => toggleBadge(key)}
-                        className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wider transition ${on ? "border-transparent text-white" : "border-border text-muted-foreground hover:border-primary/40"}`}
+                      <button key={key} type="button" onClick={() => {
+                        if (b.source === "discord") {
+                          toast.info(`${b.label} is granted by Discord role. Use the Discord tab → Sync.`);
+                          return;
+                        }
+                        toggleBadge(key);
+                      }}
+                        className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wider transition ${on ? "border-transparent text-white" : "border-border text-muted-foreground hover:border-primary/40"} ${locked ? "opacity-60" : ""}`}
                         style={on ? { backgroundColor: b.color, boxShadow: `0 0 18px -4px ${b.color}` } : undefined}>
-                        <span>{b.emoji}</span> {b.label}
+                        {key === "verified" ? <VerifiedBadge size={14} color={on ? "#fff" : b.color} /> : <span>{b.glyph}</span>}
+                        {b.label}
                       </button>
                     );
                   })}
                 </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Verified / Og / Staff / Vip require the matching role in our <a href={DISCORD_INVITE} target="_blank" rel="noreferrer" className="text-primary underline">Discord</a>. Use the Discord tab to sync.
+                </p>
               </div>
             </Section>
           )}
@@ -356,7 +379,43 @@ function Dashboard() {
                   </Field>
                 </div>
               </Section>
+
+              <Section title="Animated background">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+                  {ANIMATED_BG_PRESETS.map((p) => (
+                    <button key={p.id} type="button" onClick={() => patch("animated_bg", p.id)}
+                      className={`rounded-md border px-3 py-2 text-xs font-bold uppercase ${profile.animated_bg === p.id ? "border-primary bg-primary/20 text-primary" : "border-border text-muted-foreground"}`}>
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Plays over your background image/video. Pick "None" to disable.
+                </p>
+              </Section>
+
+              <Section title="Emoji rain">
+                <Field label="Emoji that rains down (1 character — clear to disable)">
+                  <Input value={profile.emoji_rain ?? ""} maxLength={4}
+                    onChange={(e) => patch("emoji_rain", e.target.value || null)}
+                    placeholder="🩸  💵  🔥  💎" />
+                </Field>
+              </Section>
+
+              <Section title="Custom CSS (advanced)">
+                <p className="text-xs text-muted-foreground">
+                  Injected into your public profile inside a &lt;style&gt; tag. Use this to push past the presets — at your own risk.
+                </p>
+                <Textarea rows={8} className="mt-3 font-mono text-xs" value={profile.custom_css ?? ""}
+                  maxLength={8000}
+                  onChange={(e) => patch("custom_css", e.target.value)}
+                  placeholder=":root { --crime: #ff0044; }\nh1 { letter-spacing: 0.2em; }" />
+              </Section>
             </>
+          )}
+
+          {tab === "discord" && (
+            <DiscordPanel profile={profile} onUpdate={(p) => { setProfile(p); setOriginal(p); }} />
           )}
 
           {tab === "effects" && (
@@ -459,16 +518,29 @@ function Dashboard() {
                 </p>
               )}
               {links.map((l) => (
-                <div key={l.id} className="flex gap-2 rounded-xl border border-border bg-input/30 p-3">
-                  <div className="grid flex-1 gap-2 sm:grid-cols-[200px_1fr]">
+                <div key={l.id} className="flex flex-col gap-2 rounded-xl border border-border bg-input/30 p-3 sm:flex-row sm:items-center">
+                  <div className="grid flex-1 gap-2 sm:grid-cols-[160px_1fr]">
                     <Input value={l.label} onChange={(e) => updateLink(l.id, { label: e.target.value })}
                       onBlur={() => commitLink(l)} placeholder="Label" />
                     <Input value={l.url} onChange={(e) => updateLink(l.id, { url: e.target.value })}
                       onBlur={() => commitLink(l)} placeholder="https://" />
                   </div>
-                  <Button variant="ghost" size="icon" onClick={() => deleteLink(l.id)}>
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <label className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                      Color
+                      <input type="color" value={l.accent_color ?? "#ef4444"}
+                        onChange={(e) => updateLink(l.id, { accent_color: e.target.value })}
+                        onBlur={() => commitLink(l)}
+                        className="h-8 w-10 cursor-pointer rounded border border-border bg-transparent" />
+                    </label>
+                    <Input value={l.icon ?? ""} maxLength={2} placeholder="🔥"
+                      onChange={(e) => updateLink(l.id, { icon: e.target.value })}
+                      onBlur={() => commitLink(l)}
+                      className="w-14 text-center" />
+                    <Button variant="ghost" size="icon" onClick={() => deleteLink(l.id)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -528,7 +600,7 @@ function LivePreview({ profile, links }: { profile: Profile; links: LinkRow[] })
               {profile.badges.map((b) => {
                 const def = BADGE_DEFS[b]; if (!def) return null;
                 return <span key={b} className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase"
-                  style={{ backgroundColor: def.color, color: "white" }}>{def.emoji} {def.label}</span>;
+                  style={{ backgroundColor: def.color, color: "white" }}>{def.glyph} {def.label}</span>;
               })}
             </div>
           )}
@@ -705,5 +777,69 @@ function ViewBooster({ ownHandle, onBoosted }: { ownHandle: string; onBoosted: (
         </div>
       )}
     </Section>
+  );
+}
+
+function DiscordPanel({ profile, onUpdate }: { profile: Profile; onUpdate: (p: Profile) => void }) {
+  const buildUrl = useServerFn(buildDiscordOAuthUrl);
+  const sync = useServerFn(syncDiscordBadges);
+  const unlink = useServerFn(unlinkDiscord);
+  const [busy, setBusy] = useState<string | null>(null);
+
+  async function link() {
+    setBusy("link");
+    try { const { url } = await buildUrl(); window.location.href = url; }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); setBusy(null); }
+  }
+  async function doSync() {
+    setBusy("sync");
+    try {
+      const { badges, granted } = await sync();
+      onUpdate({ ...profile, badges });
+      toast.success(granted.length ? `Synced: ${granted.join(", ")}` : "No matching roles found");
+    } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
+    finally { setBusy(null); }
+  }
+  async function doUnlink() {
+    setBusy("unlink");
+    try { await unlink(); onUpdate({ ...profile, discord_id: null, discord_username: null }); toast.success("Discord unlinked"); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
+    finally { setBusy(null); }
+  }
+
+  return (
+    <>
+      <Section title="Discord">
+        <p className="text-sm text-muted-foreground">
+          Link your Discord account and we'll grant the matching badges based on your roles in our server.
+        </p>
+        <div className="mt-4 rounded-xl border border-[#5865F2]/30 bg-[#5865F2]/5 p-4">
+          {profile.discord_id ? (
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">Linked as</p>
+                <p className="font-bold">@{profile.discord_username || profile.discord_id}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button onClick={doSync} disabled={busy === "sync"} className="bg-[#5865F2] text-white hover:bg-[#4752c4]">
+                  <RealBadge size={16} color="#1d8bf8" glyph="✓" label="sync" /> {busy === "sync" ? "Syncing..." : "Sync badges"}
+                </Button>
+                <Button variant="outline" onClick={doUnlink} disabled={busy === "unlink"}>Unlink</Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm">Not linked yet.</p>
+              <Button onClick={link} disabled={busy === "link"} className="bg-[#5865F2] text-white hover:bg-[#4752c4]">
+                {busy === "link" ? "Opening Discord..." : "Link Discord"}
+              </Button>
+            </div>
+          )}
+        </div>
+        <p className="mt-3 text-xs text-muted-foreground">
+          Need a role? Join the server: <a href={DISCORD_INVITE} target="_blank" rel="noreferrer" className="text-[#7e8aff] underline">{DISCORD_INVITE}</a>
+        </p>
+      </Section>
+    </>
   );
 }

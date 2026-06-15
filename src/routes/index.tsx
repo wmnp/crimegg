@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
+import { DISCORD_INVITE } from "@/lib/themes";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -94,10 +95,13 @@ export function Header() {
         </Link>
         <nav className="hidden items-center gap-8 text-sm font-medium text-muted-foreground sm:flex">
           <Link to="/pricing" className="transition hover:text-foreground">Pricing</Link>
-          <a href="#" className="transition hover:text-foreground">Explore</a>
-          <a href="#" className="transition hover:text-foreground">Discord</a>
+          <Link to="/market" className="transition hover:text-foreground">Market</Link>
+          <a href={DISCORD_INVITE} target="_blank" rel="noreferrer" className="transition hover:text-foreground">Discord</a>
         </nav>
         <div className="flex items-center gap-2">
+          <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex border-[#5865F2]/40 text-[#7e8aff] hover:bg-[#5865F2]/10">
+            <a href={DISCORD_INVITE} target="_blank" rel="noreferrer">Discord</a>
+          </Button>
           <Button asChild variant="ghost" size="sm"><Link to="/auth">Sign in</Link></Button>
           <Button asChild size="sm" className="glow-crime"><Link to="/auth">Get in</Link></Button>
         </div>
@@ -110,6 +114,10 @@ export function Footer() {
   return (
     <footer className="border-t border-border/40 px-6 py-10 text-center text-sm text-muted-foreground">
       <p>© {new Date().getFullYear()} crime.gg — handle responsibly.</p>
+      <p className="mt-2">
+        Join the family on{" "}
+        <a href={DISCORD_INVITE} target="_blank" rel="noreferrer" className="text-[#7e8aff] hover:underline">Discord</a>
+      </p>
     </footer>
   );
 }

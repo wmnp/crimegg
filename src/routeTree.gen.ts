@@ -15,6 +15,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UHandleRouteImport } from './routes/u.$handle'
+import { Route as ApiDiscordCallbackRouteImport } from './routes/api/discord.callback'
 
 const PricingRoute = PricingRouteImport.update({
   id: '/pricing',
@@ -46,6 +47,11 @@ const UHandleRoute = UHandleRouteImport.update({
   path: '/u/$handle',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiDiscordCallbackRoute = ApiDiscordCallbackRouteImport.update({
+  id: '/api/discord/callback',
+  path: '/api/discord/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -54,6 +60,7 @@ export interface FileRoutesByFullPath {
   '/market': typeof MarketRoute
   '/pricing': typeof PricingRoute
   '/u/$handle': typeof UHandleRoute
+  '/api/discord/callback': typeof ApiDiscordCallbackRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +69,7 @@ export interface FileRoutesByTo {
   '/market': typeof MarketRoute
   '/pricing': typeof PricingRoute
   '/u/$handle': typeof UHandleRoute
+  '/api/discord/callback': typeof ApiDiscordCallbackRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,6 +79,7 @@ export interface FileRoutesById {
   '/market': typeof MarketRoute
   '/pricing': typeof PricingRoute
   '/u/$handle': typeof UHandleRoute
+  '/api/discord/callback': typeof ApiDiscordCallbackRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -81,8 +90,16 @@ export interface FileRouteTypes {
     | '/market'
     | '/pricing'
     | '/u/$handle'
+    | '/api/discord/callback'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/dashboard' | '/market' | '/pricing' | '/u/$handle'
+  to:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/market'
+    | '/pricing'
+    | '/u/$handle'
+    | '/api/discord/callback'
   id:
     | '__root__'
     | '/'
@@ -91,6 +108,7 @@ export interface FileRouteTypes {
     | '/market'
     | '/pricing'
     | '/u/$handle'
+    | '/api/discord/callback'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -100,6 +118,7 @@ export interface RootRouteChildren {
   MarketRoute: typeof MarketRoute
   PricingRoute: typeof PricingRoute
   UHandleRoute: typeof UHandleRoute
+  ApiDiscordCallbackRoute: typeof ApiDiscordCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -146,6 +165,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UHandleRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/discord/callback': {
+      id: '/api/discord/callback'
+      path: '/api/discord/callback'
+      fullPath: '/api/discord/callback'
+      preLoaderRoute: typeof ApiDiscordCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -156,6 +182,7 @@ const rootRouteChildren: RootRouteChildren = {
   MarketRoute: MarketRoute,
   PricingRoute: PricingRoute,
   UHandleRoute: UHandleRoute,
+  ApiDiscordCallbackRoute: ApiDiscordCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

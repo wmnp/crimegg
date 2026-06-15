@@ -65,10 +65,14 @@ export const THEMES: ThemePreset[] = [
   },
 ];
 
-export const BADGE_DEFS: Record<string, { label: string; emoji: string; color: string }> = {
-  verified: { label: "Verified", emoji: "✓", color: "#3b82f6" },
-  og: { label: "OG", emoji: "★", color: "#f59e0b" },
-  rare: { label: "Rare", emoji: "♦", color: "#ec4899" },
-  staff: { label: "Staff", emoji: "⚡", color: "#ef4444" },
-  vip: { label: "VIP", emoji: "♛", color: "#a78bfa" },
+// `discord` = synced from Discord role (cannot self-assign)
+// `selfServe` = user can toggle in dashboard
+export const BADGE_DEFS: Record<string, { label: string; glyph: string; color: string; source: "discord" | "self" }> = {
+  verified: { label: "Verified", glyph: "✓", color: "#1d8bf8", source: "discord" },
+  og:       { label: "Og",       glyph: "★", color: "#f59e0b", source: "discord" },
+  staff:    { label: "Staff",    glyph: "⚡", color: "#ef4444", source: "discord" },
+  vip:      { label: "Vip",      glyph: "♛", color: "#a78bfa", source: "discord" },
+  rare:     { label: "Rare",     glyph: "♦", color: "#ec4899", source: "self" },
 };
+
+export const DISCORD_INVITE = "https://discord.gg/MmkRt6mYV";

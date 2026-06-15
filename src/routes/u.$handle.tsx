@@ -117,20 +117,25 @@ function ProfileView() {
     }
   }
 
+  const animBgClass = ANIMATED_BG_PRESETS.find((p) => p.id === (profile.animated_bg || "none"))?.css || "";
+
   return (
     <div className="relative min-h-screen overflow-hidden" style={{ fontFamily: fontStack }}>
+      {profile.custom_css && <style>{profile.custom_css}</style>}
+      <AnimatedBgStyles />
       <CustomFontInjector url={profile.font_url} family={profile.font_family} />
       <CustomCursorInjector url={profile.cursor_url} />
+      {entered && profile.emoji_rain && <EmojiRain emoji={profile.emoji_rain} density={30} />}
 
       {/* Background */}
-      <div className="fixed inset-0 -z-10" style={{ filter: profile.bg_blur ? `blur(${profile.bg_blur}px)` : undefined }}>
+      <div className={`fixed inset-0 -z-10 ${animBgClass}`} style={{ filter: profile.bg_blur ? `blur(${profile.bg_blur}px)` : undefined }}>
         {profile.background_type === "video" && profile.background_url ? (
           <video src={profile.background_url} autoPlay loop muted playsInline
             className="h-full w-full object-cover" />
         ) : profile.background_url ? (
           <img src={profile.background_url} alt="" className="h-full w-full object-cover" />
         ) : (
-          <div className="h-full w-full"
+          !animBgClass && <div className="h-full w-full"
             style={{ background: theme?.bgGradient || `radial-gradient(circle at 50% 50%, ${accent}33, #0a0a0a 70%)` }} />
         )}
         <div className="absolute inset-0 bg-black/30" />
@@ -174,13 +179,6 @@ function ProfileView() {
         const align = profile.text_align || "center";
         const linkStyle = profile.link_style || "glass";
         const tiltClass = profile.tilt_card ? "transition-transform duration-500 hover:[transform:perspective(900px)_rotateX(4deg)_rotateY(-4deg)]" : "";
-
-        function linkSx(): React.CSSProperties {
-          if (linkStyle === "filled") return { backgroundColor: accent, borderColor: accent, color: "#fff" };
-          if (linkStyle === "outline") return { background: "transparent", borderColor: accent, color: "#fff" };
-          if (linkStyle === "gradient") return { background: `linear-gradient(135deg, ${accent}, ${accent}66)`, borderColor: "transparent", color: "#fff" };
-          return { borderColor: `${accent}66`, background: `linear-gradient(135deg, ${accent}22, transparent)` };
-        }
 
         return (
         <div className="relative z-20 mx-auto flex max-w-md flex-col items-center px-6 pt-16 pb-12 text-white animate-fade-in"

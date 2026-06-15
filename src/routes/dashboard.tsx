@@ -8,13 +8,17 @@ import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
 import {
   Trash2, Plus, ExternalLink, LogOut, Upload, Download, Eye,
-  User, Image as ImageIcon, Palette, Sparkles, AtSign, Wrench, TrendingUp, Tag,
+  User, Image as ImageIcon, Palette, Sparkles, AtSign, Wrench, TrendingUp, Tag, Hash, MessageCircle,
 } from "lucide-react";
 import { uploadProfileMedia } from "@/lib/storage";
 import { EFFECT_OPTIONS, type Effect } from "@/components/profile-effects";
-import { THEMES, BADGE_DEFS } from "@/lib/themes";
+import { THEMES, BADGE_DEFS, DISCORD_INVITE } from "@/lib/themes";
+import { ANIMATED_BG_PRESETS } from "@/components/emoji-rain";
+import { VerifiedBadge, RealBadge } from "@/components/badge-verified";
+import { buildDiscordOAuthUrl, syncDiscordBadges, unlinkDiscord } from "@/lib/discord.functions";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — crime.gg" }, { name: "robots", content: "noindex" }] }),
@@ -35,14 +39,18 @@ type Profile = {
   avatar_shape: string; link_style: string; bg_blur: number;
   tilt_card: boolean; hide_views: boolean; text_align: string;
   particle_density: number; custom_title: string | null;
+  uid: number | null; custom_css: string | null;
+  animated_bg: string; emoji_rain: string | null;
+  discord_id: string | null; discord_username: string | null;
 };
-type LinkRow = { id: string; profile_id: string; label: string; url: string; sort_order: number };
+type LinkRow = { id: string; profile_id: string; label: string; url: string; sort_order: number; accent_color: string | null; icon: string | null };
 
 const TABS = [
   { id: "profile", label: "Profile", icon: User },
   { id: "media", label: "Media", icon: ImageIcon },
   { id: "style", label: "Style", icon: Palette },
   { id: "effects", label: "Effects", icon: Sparkles },
+  { id: "discord", label: "Discord", icon: MessageCircle },
   { id: "handle", label: "Handle", icon: AtSign },
   { id: "views", label: "Views", icon: TrendingUp },
   { id: "market", label: "Market", icon: Tag },
@@ -175,7 +183,10 @@ function Dashboard() {
         <aside className="lg:sticky lg:top-20 lg:h-fit">
           <div className="mb-4">
             <h1 className="truncate text-2xl font-black uppercase">@{profile.handle}</h1>
-            <p className="text-xs text-muted-foreground">{profile.views} views</p>
+            <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+              {profile.uid != null && <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 font-bold text-primary"><Hash className="inline h-3 w-3 -mt-0.5" />UID {profile.uid}</span>}
+              <span>{profile.views} views</span>
+            </div>
           </div>
           <nav className="flex flex-wrap gap-1 lg:flex-col">
             {TABS.map((t) => {
@@ -214,15 +225,26 @@ function Dashboard() {
                 <div className="mt-2 flex flex-wrap gap-2">
                   {Object.entries(BADGE_DEFS).map(([key, b]) => {
                     const on = profile.badges.includes(key);
+                    const locked = b.source === "discord" && !on;
                     return (
-                      <button key={key} type="button" onClick={() => toggleBadge(key)}
-                        className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wider transition ${on ? "border-transparent text-white" : "border-border text-muted-foreground hover:border-primary/40"}`}
+                      <button key={key} type="button" onClick={() => {
+                        if (b.source === "discord") {
+                          toast.info(`${b.label} is granted by Discord role. Use the Discord tab → Sync.`);
+                          return;
+                        }
+                        toggleBadge(key);
+                      }}
+                        className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wider transition ${on ? "border-transparent text-white" : "border-border text-muted-foreground hover:border-primary/40"} ${locked ? "opacity-60" : ""}`}
                         style={on ? { backgroundColor: b.color, boxShadow: `0 0 18px -4px ${b.color}` } : undefined}>
-                        <span>{b.emoji}</span> {b.label}
+                        {key === "verified" ? <VerifiedBadge size={14} color={on ? "#fff" : b.color} /> : <span>{b.glyph}</span>}
+                        {b.label}
                       </button>
                     );
                   })}
                 </div>
+                <p className="mt-2 text-xs text-muted-foreground">
+                  Verified / Og / Staff / Vip require the matching role in our <a href={DISCORD_INVITE} target="_blank" rel="noreferrer" className="text-primary underline">Discord</a>. Use the Discord tab to sync.
+                </p>
               </div>
             </Section>
           )}

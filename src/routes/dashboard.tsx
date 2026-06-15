@@ -550,7 +550,7 @@ function LivePreview({ profile, links }: { profile: Profile; links: LinkRow[] })
               {profile.badges.map((b) => {
                 const def = BADGE_DEFS[b]; if (!def) return null;
                 return <span key={b} className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase"
-                  style={{ backgroundColor: def.color, color: "white" }}>{def.emoji} {def.label}</span>;
+                  style={{ backgroundColor: def.color, color: "white" }}>{def.glyph} {def.label}</span>;
               })}
             </div>
           )}

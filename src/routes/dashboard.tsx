@@ -378,7 +378,43 @@ function Dashboard() {
                   </Field>
                 </div>
               </Section>
+
+              <Section title="Animated background">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+                  {ANIMATED_BG_PRESETS.map((p) => (
+                    <button key={p.id} type="button" onClick={() => patch("animated_bg", p.id)}
+                      className={`rounded-md border px-3 py-2 text-xs font-bold uppercase ${profile.animated_bg === p.id ? "border-primary bg-primary/20 text-primary" : "border-border text-muted-foreground"}`}>
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-3 text-xs text-muted-foreground">
+                  Plays over your background image/video. Pick "None" to disable.
+                </p>
+              </Section>
+
+              <Section title="Emoji rain">
+                <Field label="Emoji that rains down (1 character — clear to disable)">
+                  <Input value={profile.emoji_rain ?? ""} maxLength={4}
+                    onChange={(e) => patch("emoji_rain", e.target.value || null)}
+                    placeholder="🩸  💵  🔥  💎" />
+                </Field>
+              </Section>
+
+              <Section title="Custom CSS (advanced)">
+                <p className="text-xs text-muted-foreground">
+                  Injected into your public profile inside a &lt;style&gt; tag. Use this to push past the presets — at your own risk.
+                </p>
+                <Textarea rows={8} className="mt-3 font-mono text-xs" value={profile.custom_css ?? ""}
+                  maxLength={8000}
+                  onChange={(e) => patch("custom_css", e.target.value)}
+                  placeholder=":root { --crime: #ff0044; }\nh1 { letter-spacing: 0.2em; }" />
+              </Section>
             </>
+          )}
+
+          {tab === "discord" && (
+            <DiscordPanel profile={profile} onUpdate={(p) => { setProfile(p); setOriginal(p); }} />
           )}
 
           {tab === "effects" && (

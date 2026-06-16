@@ -197,11 +197,11 @@ function ProfileView() {
             <p className="text-sm opacity-70">@{profile.handle}</p>
 
             {profile.badges.length > 0 && (
-              <div className="mt-3 flex flex-wrap justify-center gap-1.5 items-center">
+              <div className="mt-3 flex flex-wrap justify-center gap-2 items-center">
                 {profile.badges.map((b) => {
                   const def = BADGE_DEFS[b]; if (!def) return null;
-                  if (b === "verified") return <VerifiedBadge key={b} size={20} color={def.color} />;
-                  return <RealBadge key={b} size={20} color={def.color} glyph={def.glyph} label={def.label} />;
+                  const Icon = def.icon;
+                  return <Icon key={b} size={20} color={def.color} aria-label={def.label} />;
                 })}
               </div>
             )}

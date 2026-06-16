@@ -17,7 +17,7 @@ import { uploadProfileMedia } from "@/lib/storage";
 import { EFFECT_OPTIONS, type Effect } from "@/components/profile-effects";
 import { THEMES, BADGE_DEFS, DISCORD_INVITE } from "@/lib/themes";
 import { ANIMATED_BG_PRESETS } from "@/components/emoji-rain";
-import { VerifiedBadge, RealBadge } from "@/components/badge-verified";
+
 import { buildDiscordOAuthUrl, syncDiscordBadges, unlinkDiscord } from "@/lib/discord.functions";
 
 export const Route = createFileRoute("/dashboard")({

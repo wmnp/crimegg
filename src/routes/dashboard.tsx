@@ -47,15 +47,16 @@ type Profile = {
 type LinkRow = { id: string; profile_id: string; label: string; url: string; sort_order: number; accent_color: string | null; icon: string | null };
 
 const TABS = [
-  { id: "profile", label: "Profile", icon: User },
-  { id: "media", label: "Media", icon: ImageIcon },
-  { id: "style", label: "Style", icon: Palette },
-  { id: "effects", label: "Effects", icon: Sparkles },
-  { id: "discord", label: "Discord", icon: MessageCircle },
-  { id: "handle", label: "Handle", icon: AtSign },
-  { id: "views", label: "Views", icon: TrendingUp },
-  { id: "market", label: "Market", icon: Tag },
-  { id: "tools", label: "Tools", icon: Wrench },
+  { id: "profile", label: "Profile", icon: User, adminOnly: false },
+  { id: "badges", label: "Badges", icon: BadgeCheck, adminOnly: false },
+  { id: "media", label: "Media", icon: ImageIcon, adminOnly: false },
+  { id: "style", label: "Style", icon: Palette, adminOnly: false },
+  { id: "effects", label: "Effects", icon: Sparkles, adminOnly: false },
+  { id: "discord", label: "Discord", icon: MessageCircle, adminOnly: false },
+  { id: "handle", label: "Handle", icon: AtSign, adminOnly: false },
+  { id: "market", label: "Market", icon: Tag, adminOnly: false },
+  { id: "views", label: "Views", icon: TrendingUp, adminOnly: true },
+  { id: "tools", label: "Tools", icon: Wrench, adminOnly: false },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 

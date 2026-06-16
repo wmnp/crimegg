@@ -596,11 +596,11 @@ function LivePreview({ profile, links }: { profile: Profile; links: LinkRow[] })
           </h2>
           <p className="text-xs opacity-70">@{profile.handle}</p>
           {profile.badges.length > 0 && (
-            <div className="mt-2 flex flex-wrap justify-center gap-1">
+            <div className="mt-2 flex flex-wrap justify-center gap-1.5 items-center">
               {profile.badges.map((b) => {
                 const def = BADGE_DEFS[b]; if (!def) return null;
-                return <span key={b} className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase"
-                  style={{ backgroundColor: def.color, color: "white" }}>{def.glyph} {def.label}</span>;
+                const I = def.icon;
+                return <I key={b} size={16} color={def.color} aria-label={def.label} />;
               })}
             </div>
           )}

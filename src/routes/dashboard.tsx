@@ -468,25 +468,10 @@ function Dashboard() {
           )}
 
           {tab === "handle" && (
-            <Section title="Your handle">
-              <p className="text-sm text-muted-foreground">
-                Public URL:{" "}
-                <a href={`/u/${profile.handle}`} target="_blank" rel="noreferrer"
-                  className="font-bold text-primary underline">
-                  crime.gg/u/{profile.handle}
-                </a>
-              </p>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <Stat label="Total views" value={profile.views.toLocaleString()} />
-                <Stat label="Plan" value={profile.plan} />
-              </div>
-              <p className="mt-4 text-xs text-muted-foreground">
-                Handle changes aren't supported yet — drop us a line.
-              </p>
-            </Section>
+            <HandlePanel profile={profile} onChanged={(h) => { setProfile({ ...profile, handle: h }); setOriginal((o) => o ? { ...o, handle: h } : o); }} />
           )}
 
-          {tab === "views" && <ViewBooster ownHandle={profile.handle} onBoosted={(h, total) => { if (h === profile.handle.toLowerCase()) { setProfile({ ...profile, views: total }); setOriginal((o) => o ? { ...o, views: total } : o); } }} />}
+          {tab === "views" && profile.is_admin && <ViewBooster ownHandle={profile.handle} onBoosted={(h, total) => { if (h === profile.handle.toLowerCase()) { setProfile({ ...profile, views: total }); setOriginal((o) => o ? { ...o, views: total } : o); } }} />}
 
           {tab === "market" && (
             <Section title="List your handle for sale">

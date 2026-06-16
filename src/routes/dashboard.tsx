@@ -42,6 +42,7 @@ type Profile = {
   uid: number | null; custom_css: string | null;
   animated_bg: string; emoji_rain: string | null;
   discord_id: string | null; discord_username: string | null;
+  is_admin?: boolean;
 };
 type LinkRow = { id: string; profile_id: string; label: string; url: string; sort_order: number; accent_color: string | null; icon: string | null };
 

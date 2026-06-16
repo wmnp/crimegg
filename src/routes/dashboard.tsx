@@ -237,7 +237,7 @@ function Dashboard() {
                       }}
                         className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wider transition ${on ? "border-transparent text-white" : "border-border text-muted-foreground hover:border-primary/40"} ${locked ? "opacity-60" : ""}`}
                         style={on ? { backgroundColor: b.color, boxShadow: `0 0 18px -4px ${b.color}` } : undefined}>
-                        {key === "verified" ? <VerifiedBadge size={14} color={on ? "#fff" : b.color} /> : <span>{b.glyph}</span>}
+                        {(() => { const I = b.icon; return <I size={14} color={on ? "#fff" : b.color} />; })()}
                         {b.label}
                       </button>
                     );

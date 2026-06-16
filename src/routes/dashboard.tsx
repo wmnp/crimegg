@@ -228,31 +228,38 @@ function Dashboard() {
                   <Textarea rows={4} value={profile.bio ?? ""} onChange={(e) => patch("bio", e.target.value)} />
                 </Field>
               </div>
-              <div className="mt-4">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Badges</Label>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {Object.entries(BADGE_DEFS).map(([key, b]) => {
-                    const on = profile.badges.includes(key);
-                    const locked = b.source === "discord" && !on;
-                    return (
-                      <button key={key} type="button" onClick={() => {
-                        if (b.source === "discord") {
-                          toast.info(`${b.label} is granted by Discord role. Use the Discord tab → Sync.`);
-                          return;
-                        }
-                        toggleBadge(key);
-                      }}
-                        className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wider transition ${on ? "border-transparent text-white" : "border-border text-muted-foreground hover:border-primary/40"} ${locked ? "opacity-60" : ""}`}
-                        style={on ? { backgroundColor: b.color, boxShadow: `0 0 18px -4px ${b.color}` } : undefined}>
-                        {(() => { const I = b.icon; return <I size={14} color={on ? "#fff" : b.color} />; })()}
-                        {b.label}
-                      </button>
-                    );
+            </Section>
+          )}
+
+          {tab === "badges" && (
+            <Section title="Badges">
+              <p className="text-sm text-muted-foreground">
+                Click to equip or unequip. Verified / OG / Staff / VIP are granted by your <a href={DISCORD_INVITE} target="_blank" rel="noreferrer" className="text-primary underline">Discord</a> role — re-syncing will re-grant them if you still have the role.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {Object.entries(BADGE_DEFS).map(([key, b]) => {
+                  const on = profile.badges.includes(key);
+                  const I = b.icon;
+                  return (
+                    <button key={key} type="button" onClick={() => toggleBadge(key)}
+                      className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-bold uppercase tracking-wider transition ${on ? "border-primary bg-primary/10" : "border-border text-muted-foreground hover:border-primary/40"}`}>
+                      <I size={20} color={b.color} />
+                      <span style={on ? { color: b.color } : undefined}>{b.label}</span>
+                      <span className="text-[10px] opacity-60">{b.source === "discord" ? "discord" : "free"}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="mt-6 rounded-xl border border-border bg-input/30 p-4">
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">Equipped order (left → right on profile)</p>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  {profile.badges.length === 0 && <span className="text-sm text-muted-foreground">none equipped</span>}
+                  {profile.badges.map((b) => {
+                    const def = BADGE_DEFS[b]; if (!def) return null;
+                    const I = def.icon;
+                    return <I key={b} size={22} color={def.color} aria-label={def.label} />;
                   })}
                 </div>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Verified / Og / Staff / Vip require the matching role in our <a href={DISCORD_INVITE} target="_blank" rel="noreferrer" className="text-primary underline">Discord</a>. Use the Discord tab to sync.
-                </p>
               </div>
             </Section>
           )}

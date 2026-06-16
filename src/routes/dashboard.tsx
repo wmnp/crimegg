@@ -192,7 +192,7 @@ function Dashboard() {
             </div>
           </div>
           <nav className="flex flex-wrap gap-1 lg:flex-col">
-            {TABS.map((t) => {
+            {TABS.filter((t) => !t.adminOnly || profile.is_admin).map((t) => {
               const Icon = t.icon;
               const active = tab === t.id;
               return (
@@ -204,6 +204,11 @@ function Dashboard() {
                 </button>
               );
             })}
+            {profile.is_admin && (
+              <Link to="/admin" className="mt-2 flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2.5 text-sm font-bold uppercase tracking-wider text-amber-400 hover:border-amber-500">
+                <Shield className="h-4 w-4" /> Admin Panel
+              </Link>
+            )}
           </nav>
         </aside>
 

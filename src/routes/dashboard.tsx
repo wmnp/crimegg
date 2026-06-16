@@ -821,7 +821,7 @@ function DiscordPanel({ profile, onUpdate }: { profile: Profile; onUpdate: (p: P
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button onClick={doSync} disabled={busy === "sync"} className="bg-[#5865F2] text-white hover:bg-[#4752c4]">
-                  <RealBadge size={16} color="#1d8bf8" glyph="✓" label="sync" /> {busy === "sync" ? "Syncing..." : "Sync badges"}
+                  <BadgeCheck size={16} /> {busy === "sync" ? "Syncing..." : "Sync badges"}
                 </Button>
                 <Button variant="outline" onClick={doUnlink} disabled={busy === "unlink"}>Unlink</Button>
               </div>

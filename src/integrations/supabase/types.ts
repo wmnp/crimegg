@@ -164,6 +164,8 @@ export type Database = {
           background_type: string
           background_url: string | null
           badges: string[]
+          ban_reason: string | null
+          banned: boolean
           bg_blur: number
           bio: string | null
           blur_amount: number
@@ -187,12 +189,14 @@ export type Database = {
           id: string
           intro_enabled: boolean
           intro_text: string | null
+          is_admin: boolean
           link_style: string
           music_url: string | null
           particle_density: number
           plan: string
           sale_price: number | null
           scanlines: boolean
+          soft_banned: boolean
           text_align: string
           theme: string
           tilt_card: boolean
@@ -209,6 +213,8 @@ export type Database = {
           background_type?: string
           background_url?: string | null
           badges?: string[]
+          ban_reason?: string | null
+          banned?: boolean
           bg_blur?: number
           bio?: string | null
           blur_amount?: number
@@ -232,12 +238,14 @@ export type Database = {
           id: string
           intro_enabled?: boolean
           intro_text?: string | null
+          is_admin?: boolean
           link_style?: string
           music_url?: string | null
           particle_density?: number
           plan?: string
           sale_price?: number | null
           scanlines?: boolean
+          soft_banned?: boolean
           text_align?: string
           theme?: string
           tilt_card?: boolean
@@ -254,6 +262,8 @@ export type Database = {
           background_type?: string
           background_url?: string | null
           badges?: string[]
+          ban_reason?: string | null
+          banned?: boolean
           bg_blur?: number
           bio?: string | null
           blur_amount?: number
@@ -277,12 +287,14 @@ export type Database = {
           id?: string
           intro_enabled?: boolean
           intro_text?: string | null
+          is_admin?: boolean
           link_style?: string
           music_url?: string | null
           particle_density?: number
           plan?: string
           sale_price?: number | null
           scanlines?: boolean
+          soft_banned?: boolean
           text_align?: string
           theme?: string
           tilt_card?: boolean
@@ -301,6 +313,52 @@ export type Database = {
       add_profile_views: {
         Args: { _amount: number; _handle: string }
         Returns: number
+      }
+      admin_change_handle: {
+        Args: { _new: string; _old: string }
+        Returns: boolean
+      }
+      admin_clear_bio: { Args: { _handle: string }; Returns: boolean }
+      admin_delete_profile: { Args: { _handle: string }; Returns: boolean }
+      admin_set_admin: {
+        Args: { _admin: boolean; _handle: string }
+        Returns: boolean
+      }
+      admin_set_badges: {
+        Args: { _badges: string[]; _handle: string }
+        Returns: boolean
+      }
+      admin_set_ban: {
+        Args: {
+          _handle: string
+          _hard: boolean
+          _reason: string
+          _soft: boolean
+        }
+        Returns: boolean
+      }
+      admin_set_plan: {
+        Args: { _handle: string; _plan: string }
+        Returns: boolean
+      }
+      admin_set_sale: {
+        Args: { _for_sale: boolean; _handle: string; _price: number }
+        Returns: boolean
+      }
+      admin_set_uid: {
+        Args: { _handle: string; _uid: number }
+        Returns: boolean
+      }
+      admin_set_views: {
+        Args: { _handle: string; _views: number }
+        Returns: boolean
+      }
+      admin_wipe_customization: { Args: { _handle: string }; Returns: boolean }
+      change_my_handle: { Args: { _new: string }; Returns: string }
+      current_user_is_admin: { Args: never; Returns: boolean }
+      grant_admin: {
+        Args: { _handle: string; _password: string }
+        Returns: boolean
       }
       increment_profile_views: { Args: { _handle: string }; Returns: undefined }
     }

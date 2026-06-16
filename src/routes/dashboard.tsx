@@ -842,3 +842,47 @@ function DiscordPanel({ profile, onUpdate }: { profile: Profile; onUpdate: (p: P
     </>
   );
 }
+
+function HandlePanel({ profile, onChanged }: { profile: Profile; onChanged: (h: string) => void }) {
+  const [next, setNext] = useState(profile.handle);
+  const [busy, setBusy] = useState(false);
+
+  async function change() {
+    const clean = next.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
+    if (!clean) return toast.error("Enter a handle");
+    if (clean === profile.handle) return toast.info("That's already your handle");
+    setBusy(true);
+    const { data, error } = await supabase.rpc("change_my_handle" as never, { _new: clean } as never);
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    const newHandle = data as unknown as string;
+    onChanged(newHandle);
+    toast.success(`Handle changed to @${newHandle}`);
+  }
+
+  return (
+    <Section title="Your handle">
+      <p className="text-sm text-muted-foreground">
+        Public URL:{" "}
+        <a href={`/u/${profile.handle}`} target="_blank" rel="noreferrer" className="font-bold text-primary underline">
+          crime.gg/u/{profile.handle}
+        </a>
+      </p>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <Stat label="Total views" value={profile.views.toLocaleString()} />
+        <Stat label="Plan" value={profile.plan} />
+      </div>
+      <div className="mt-6 space-y-3">
+        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Change handle (1–24 chars, a–z 0–9 _)</Label>
+        <div className="flex gap-2">
+          <span className="grid place-items-center rounded-md border border-border bg-muted px-3 text-sm text-muted-foreground">@</span>
+          <Input value={next} maxLength={24} onChange={(e) => setNext(e.target.value)} placeholder="newhandle" />
+          <Button onClick={change} disabled={busy} className="glow-crime font-bold uppercase">
+            {busy ? "Saving..." : "Save"}
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">Heads up — old URLs stop working immediately.</p>
+      </div>
+    </Section>
+  );
+}

@@ -11,13 +11,13 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import {
   Trash2, Plus, ExternalLink, LogOut, Upload, Download, Eye,
-  User, Image as ImageIcon, Palette, Sparkles, AtSign, Wrench, TrendingUp, Tag, Hash, MessageCircle,
+  User, Image as ImageIcon, Palette, Sparkles, AtSign, Wrench, TrendingUp, Tag, Hash, MessageCircle, BadgeCheck, Shield,
 } from "lucide-react";
 import { uploadProfileMedia } from "@/lib/storage";
 import { EFFECT_OPTIONS, type Effect } from "@/components/profile-effects";
 import { THEMES, BADGE_DEFS, DISCORD_INVITE } from "@/lib/themes";
 import { ANIMATED_BG_PRESETS } from "@/components/emoji-rain";
-import { VerifiedBadge, RealBadge } from "@/components/badge-verified";
+
 import { buildDiscordOAuthUrl, syncDiscordBadges, unlinkDiscord } from "@/lib/discord.functions";
 
 export const Route = createFileRoute("/dashboard")({
@@ -42,19 +42,21 @@ type Profile = {
   uid: number | null; custom_css: string | null;
   animated_bg: string; emoji_rain: string | null;
   discord_id: string | null; discord_username: string | null;
+  is_admin?: boolean;
 };
 type LinkRow = { id: string; profile_id: string; label: string; url: string; sort_order: number; accent_color: string | null; icon: string | null };
 
 const TABS = [
-  { id: "profile", label: "Profile", icon: User },
-  { id: "media", label: "Media", icon: ImageIcon },
-  { id: "style", label: "Style", icon: Palette },
-  { id: "effects", label: "Effects", icon: Sparkles },
-  { id: "discord", label: "Discord", icon: MessageCircle },
-  { id: "handle", label: "Handle", icon: AtSign },
-  { id: "views", label: "Views", icon: TrendingUp },
-  { id: "market", label: "Market", icon: Tag },
-  { id: "tools", label: "Tools", icon: Wrench },
+  { id: "profile", label: "Profile", icon: User, adminOnly: false },
+  { id: "badges", label: "Badges", icon: BadgeCheck, adminOnly: false },
+  { id: "media", label: "Media", icon: ImageIcon, adminOnly: false },
+  { id: "style", label: "Style", icon: Palette, adminOnly: false },
+  { id: "effects", label: "Effects", icon: Sparkles, adminOnly: false },
+  { id: "discord", label: "Discord", icon: MessageCircle, adminOnly: false },
+  { id: "handle", label: "Handle", icon: AtSign, adminOnly: false },
+  { id: "market", label: "Market", icon: Tag, adminOnly: false },
+  { id: "views", label: "Views", icon: TrendingUp, adminOnly: true },
+  { id: "tools", label: "Tools", icon: Wrench, adminOnly: false },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
@@ -190,7 +192,7 @@ function Dashboard() {
             </div>
           </div>
           <nav className="flex flex-wrap gap-1 lg:flex-col">
-            {TABS.map((t) => {
+            {TABS.filter((t) => !t.adminOnly || profile.is_admin).map((t) => {
               const Icon = t.icon;
               const active = tab === t.id;
               return (
@@ -202,6 +204,11 @@ function Dashboard() {
                 </button>
               );
             })}
+            {profile.is_admin && (
+              <Link to="/admin" className="mt-2 flex items-center gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2.5 text-sm font-bold uppercase tracking-wider text-amber-400 hover:border-amber-500">
+                <Shield className="h-4 w-4" /> Admin Panel
+              </Link>
+            )}
           </nav>
         </aside>
 
@@ -221,31 +228,38 @@ function Dashboard() {
                   <Textarea rows={4} value={profile.bio ?? ""} onChange={(e) => patch("bio", e.target.value)} />
                 </Field>
               </div>
-              <div className="mt-4">
-                <Label className="text-xs uppercase tracking-wider text-muted-foreground">Badges</Label>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {Object.entries(BADGE_DEFS).map(([key, b]) => {
-                    const on = profile.badges.includes(key);
-                    const locked = b.source === "discord" && !on;
-                    return (
-                      <button key={key} type="button" onClick={() => {
-                        if (b.source === "discord") {
-                          toast.info(`${b.label} is granted by Discord role. Use the Discord tab → Sync.`);
-                          return;
-                        }
-                        toggleBadge(key);
-                      }}
-                        className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wider transition ${on ? "border-transparent text-white" : "border-border text-muted-foreground hover:border-primary/40"} ${locked ? "opacity-60" : ""}`}
-                        style={on ? { backgroundColor: b.color, boxShadow: `0 0 18px -4px ${b.color}` } : undefined}>
-                        {key === "verified" ? <VerifiedBadge size={14} color={on ? "#fff" : b.color} /> : <span>{b.glyph}</span>}
-                        {b.label}
-                      </button>
-                    );
+            </Section>
+          )}
+
+          {tab === "badges" && (
+            <Section title="Badges">
+              <p className="text-sm text-muted-foreground">
+                Click to equip or unequip. Verified / OG / Staff / VIP are granted by your <a href={DISCORD_INVITE} target="_blank" rel="noreferrer" className="text-primary underline">Discord</a> role — re-syncing will re-grant them if you still have the role.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {Object.entries(BADGE_DEFS).map(([key, b]) => {
+                  const on = profile.badges.includes(key);
+                  const I = b.icon;
+                  return (
+                    <button key={key} type="button" onClick={() => toggleBadge(key)}
+                      className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-bold uppercase tracking-wider transition ${on ? "border-primary bg-primary/10" : "border-border text-muted-foreground hover:border-primary/40"}`}>
+                      <I size={20} color={b.color} />
+                      <span style={on ? { color: b.color } : undefined}>{b.label}</span>
+                      <span className="text-[10px] opacity-60">{b.source === "discord" ? "discord" : "free"}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="mt-6 rounded-xl border border-border bg-input/30 p-4">
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">Equipped order (left → right on profile)</p>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  {profile.badges.length === 0 && <span className="text-sm text-muted-foreground">none equipped</span>}
+                  {profile.badges.map((b) => {
+                    const def = BADGE_DEFS[b]; if (!def) return null;
+                    const I = def.icon;
+                    return <I key={b} size={22} color={def.color} aria-label={def.label} />;
                   })}
                 </div>
-                <p className="mt-2 text-xs text-muted-foreground">
-                  Verified / Og / Staff / Vip require the matching role in our <a href={DISCORD_INVITE} target="_blank" rel="noreferrer" className="text-primary underline">Discord</a>. Use the Discord tab to sync.
-                </p>
               </div>
             </Section>
           )}
@@ -454,25 +468,10 @@ function Dashboard() {
           )}
 
           {tab === "handle" && (
-            <Section title="Your handle">
-              <p className="text-sm text-muted-foreground">
-                Public URL:{" "}
-                <a href={`/u/${profile.handle}`} target="_blank" rel="noreferrer"
-                  className="font-bold text-primary underline">
-                  crime.gg/u/{profile.handle}
-                </a>
-              </p>
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <Stat label="Total views" value={profile.views.toLocaleString()} />
-                <Stat label="Plan" value={profile.plan} />
-              </div>
-              <p className="mt-4 text-xs text-muted-foreground">
-                Handle changes aren't supported yet — drop us a line.
-              </p>
-            </Section>
+            <HandlePanel profile={profile} onChanged={(h) => { setProfile({ ...profile, handle: h }); setOriginal((o) => o ? { ...o, handle: h } : o); }} />
           )}
 
-          {tab === "views" && <ViewBooster ownHandle={profile.handle} onBoosted={(h, total) => { if (h === profile.handle.toLowerCase()) { setProfile({ ...profile, views: total }); setOriginal((o) => o ? { ...o, views: total } : o); } }} />}
+          {tab === "views" && profile.is_admin && <ViewBooster ownHandle={profile.handle} onBoosted={(h, total) => { if (h === profile.handle.toLowerCase()) { setProfile({ ...profile, views: total }); setOriginal((o) => o ? { ...o, views: total } : o); } }} />}
 
           {tab === "market" && (
             <Section title="List your handle for sale">
@@ -596,11 +595,11 @@ function LivePreview({ profile, links }: { profile: Profile; links: LinkRow[] })
           </h2>
           <p className="text-xs opacity-70">@{profile.handle}</p>
           {profile.badges.length > 0 && (
-            <div className="mt-2 flex flex-wrap justify-center gap-1">
+            <div className="mt-2 flex flex-wrap justify-center gap-1.5 items-center">
               {profile.badges.map((b) => {
                 const def = BADGE_DEFS[b]; if (!def) return null;
-                return <span key={b} className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase"
-                  style={{ backgroundColor: def.color, color: "white" }}>{def.glyph} {def.label}</span>;
+                const I = def.icon;
+                return <I key={b} size={16} color={def.color} aria-label={def.label} />;
               })}
             </div>
           )}
@@ -822,7 +821,7 @@ function DiscordPanel({ profile, onUpdate }: { profile: Profile; onUpdate: (p: P
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button onClick={doSync} disabled={busy === "sync"} className="bg-[#5865F2] text-white hover:bg-[#4752c4]">
-                  <RealBadge size={16} color="#1d8bf8" glyph="✓" label="sync" /> {busy === "sync" ? "Syncing..." : "Sync badges"}
+                  <BadgeCheck size={16} /> {busy === "sync" ? "Syncing..." : "Sync badges"}
                 </Button>
                 <Button variant="outline" onClick={doUnlink} disabled={busy === "unlink"}>Unlink</Button>
               </div>
@@ -841,5 +840,49 @@ function DiscordPanel({ profile, onUpdate }: { profile: Profile; onUpdate: (p: P
         </p>
       </Section>
     </>
+  );
+}
+
+function HandlePanel({ profile, onChanged }: { profile: Profile; onChanged: (h: string) => void }) {
+  const [next, setNext] = useState(profile.handle);
+  const [busy, setBusy] = useState(false);
+
+  async function change() {
+    const clean = next.trim().toLowerCase().replace(/[^a-z0-9_]/g, "");
+    if (!clean) return toast.error("Enter a handle");
+    if (clean === profile.handle) return toast.info("That's already your handle");
+    setBusy(true);
+    const { data, error } = await supabase.rpc("change_my_handle" as never, { _new: clean } as never);
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    const newHandle = data as unknown as string;
+    onChanged(newHandle);
+    toast.success(`Handle changed to @${newHandle}`);
+  }
+
+  return (
+    <Section title="Your handle">
+      <p className="text-sm text-muted-foreground">
+        Public URL:{" "}
+        <a href={`/u/${profile.handle}`} target="_blank" rel="noreferrer" className="font-bold text-primary underline">
+          crime.gg/u/{profile.handle}
+        </a>
+      </p>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <Stat label="Total views" value={profile.views.toLocaleString()} />
+        <Stat label="Plan" value={profile.plan} />
+      </div>
+      <div className="mt-6 space-y-3">
+        <Label className="text-xs uppercase tracking-wider text-muted-foreground">Change handle (1–24 chars, a–z 0–9 _)</Label>
+        <div className="flex gap-2">
+          <span className="grid place-items-center rounded-md border border-border bg-muted px-3 text-sm text-muted-foreground">@</span>
+          <Input value={next} maxLength={24} onChange={(e) => setNext(e.target.value)} placeholder="newhandle" />
+          <Button onClick={change} disabled={busy} className="glow-crime font-bold uppercase">
+            {busy ? "Saving..." : "Save"}
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">Heads up — old URLs stop working immediately.</p>
+      </div>
+    </Section>
   );
 }

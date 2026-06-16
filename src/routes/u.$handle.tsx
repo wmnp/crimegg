@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FollowButton } from "@/components/follow-button";
-import { VerifiedBadge, RealBadge } from "@/components/badge-verified";
+
 import { EmojiRain, AnimatedBgStyles, ANIMATED_BG_PRESETS } from "@/components/emoji-rain";
 
 export const Route = createFileRoute("/u/$handle")({
@@ -20,7 +20,7 @@ export const Route = createFileRoute("/u/$handle")({
     const handle = params.handle.toLowerCase();
     const { data: profile } = await supabase
       .from("profiles").select("*").eq("handle", handle).maybeSingle();
-    if (!profile) throw notFound();
+    if (!profile || profile.banned || profile.soft_banned) throw notFound();
     const [{ data: links }, { data: guestbook }] = await Promise.all([
       supabase.from("links").select("*").eq("profile_id", profile.id).order("sort_order"),
       supabase.from("guestbook").select("*").eq("profile_id", profile.id).order("created_at", { ascending: false }).limit(30),
@@ -197,11 +197,11 @@ function ProfileView() {
             <p className="text-sm opacity-70">@{profile.handle}</p>
 
             {profile.badges.length > 0 && (
-              <div className="mt-3 flex flex-wrap justify-center gap-1.5 items-center">
+              <div className="mt-3 flex flex-wrap justify-center gap-2 items-center">
                 {profile.badges.map((b) => {
                   const def = BADGE_DEFS[b]; if (!def) return null;
-                  if (b === "verified") return <VerifiedBadge key={b} size={20} color={def.color} />;
-                  return <RealBadge key={b} size={20} color={def.color} glyph={def.glyph} label={def.label} />;
+                  const Icon = def.icon;
+                  return <Icon key={b} size={20} color={def.color} aria-label={def.label} />;
                 })}
               </div>
             )}

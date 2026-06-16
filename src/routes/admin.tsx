@@ -1,0 +1,281 @@
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import { Shield, Search, ArrowLeft } from "lucide-react";
+import { BADGE_DEFS } from "@/lib/themes";
+
+export const Route = createFileRoute("/admin")({
+  head: () => ({ meta: [{ title: "Admin Panel — crime.gg" }, { name: "robots", content: "noindex" }] }),
+  component: AdminPanel,
+});
+
+type ProfileLite = {
+  id: string; handle: string; uid: number | null; views: number; plan: string;
+  is_admin: boolean; banned: boolean; soft_banned: boolean; ban_reason: string | null;
+  badges: string[]; for_sale: boolean; sale_price: number | null;
+  display_name: string | null; avatar_url: string | null;
+};
+
+function AdminPanel() {
+  const navigate = useNavigate();
+  const [me, setMe] = useState<{ handle: string; is_admin: boolean } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const [target, setTarget] = useState<ProfileLite | null>(null);
+  const [searchBusy, setSearchBusy] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { navigate({ to: "/auth" }); return; }
+      const { data } = await supabase.from("profiles").select("handle, is_admin").eq("id", user.id).single();
+      setMe(data as never);
+      setLoading(false);
+    })();
+  }, [navigate]);
+
+  async function find() {
+    const h = query.trim().toLowerCase().replace(/^@/, "");
+    if (!h) return;
+    setSearchBusy(true);
+    const { data, error } = await supabase.from("profiles")
+      .select("id, handle, uid, views, plan, is_admin, banned, soft_banned, ban_reason, badges, for_sale, sale_price, display_name, avatar_url")
+      .eq("handle", h).maybeSingle();
+    setSearchBusy(false);
+    if (error) return toast.error(error.message);
+    if (!data) return toast.error(`No profile @${h}`);
+    setTarget(data as ProfileLite);
+  }
+
+  async function refresh() {
+    if (!target) return;
+    const { data } = await supabase.from("profiles")
+      .select("id, handle, uid, views, plan, is_admin, banned, soft_banned, ban_reason, badges, for_sale, sale_price, display_name, avatar_url")
+      .eq("id", target.id).maybeSingle();
+    if (data) setTarget(data as ProfileLite);
+  }
+
+  if (loading) return <div className="grid min-h-screen place-items-center text-muted-foreground">loading...</div>;
+  if (!me?.is_admin) {
+    return (
+      <div className="grid min-h-screen place-items-center px-4 text-center">
+        <div className="glass max-w-md rounded-2xl p-8">
+          <Shield className="mx-auto h-10 w-10 text-amber-400" />
+          <h1 className="mt-4 text-2xl font-black uppercase">Forbidden</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            You don't have admin powers. Get them at <Link to="/admins" className="text-primary underline">/admins</Link>.
+          </p>
+          <Link to="/dashboard" className="mt-6 inline-block text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground">← back to dashboard</Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen">
+      <header className="sticky top-0 z-30 border-b border-border/40 bg-background/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+          <div className="flex items-center gap-3">
+            <Shield className="h-5 w-5 text-amber-400" />
+            <h1 className="text-xl font-black uppercase">Admin Panel</h1>
+            <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-400">
+              @{me.handle}
+            </span>
+          </div>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/dashboard"><ArrowLeft className="h-3.5 w-3.5" /> Dashboard</Link>
+          </Button>
+        </div>
+      </header>
+      <main className="mx-auto max-w-6xl space-y-6 px-4 py-6">
+        <section className="glass rounded-2xl p-5">
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">Find profile by handle</Label>
+          <div className="mt-2 flex gap-2">
+            <Input value={query} onChange={(e) => setQuery(e.target.value)}
+              placeholder="handle" onKeyDown={(e) => e.key === "Enter" && find()} />
+            <Button onClick={find} disabled={searchBusy} className="glow-crime font-bold uppercase">
+              <Search className="h-4 w-4" /> {searchBusy ? "..." : "Find"}
+            </Button>
+          </div>
+        </section>
+
+        {target && <TargetActions target={target} onRefresh={refresh} onCleared={() => setTarget(null)} />}
+      </main>
+    </div>
+  );
+}
+
+function TargetActions({ target, onRefresh, onCleared }: { target: ProfileLite; onRefresh: () => void; onCleared: () => void }) {
+  return (
+    <section className="glass space-y-5 rounded-2xl p-5">
+      <header className="flex items-center gap-4 border-b border-border pb-4">
+        <div className="h-14 w-14 overflow-hidden rounded-full border-2 border-primary/40">
+          {target.avatar_url ? <img src={target.avatar_url} alt="" className="h-full w-full object-cover" />
+            : <div className="grid h-full w-full place-items-center bg-black text-xl font-black">{target.handle[0]?.toUpperCase()}</div>}
+        </div>
+        <div className="flex-1">
+          <h2 className="text-xl font-black">@{target.handle}</h2>
+          <div className="mt-1 flex flex-wrap gap-2 text-xs text-muted-foreground">
+            <span>UID #{target.uid ?? "—"}</span>
+            <span>{target.views.toLocaleString()} views</span>
+            <span>{target.plan}</span>
+            {target.is_admin && <span className="rounded bg-amber-500/20 px-1.5 text-amber-400">ADMIN</span>}
+            {target.banned && <span className="rounded bg-red-500/20 px-1.5 text-red-400">BANNED</span>}
+            {target.soft_banned && <span className="rounded bg-orange-500/20 px-1.5 text-orange-400">SOFT-BAN</span>}
+          </div>
+        </div>
+        <Button asChild variant="outline" size="sm">
+          <a href={`/u/${target.handle}`} target="_blank" rel="noreferrer">View →</a>
+        </Button>
+      </header>
+
+      <Tool title="Change UID" onRun={async (vals) => {
+        const n = parseInt(vals.uid, 10); if (!Number.isFinite(n)) throw new Error("UID must be a number");
+        const { error } = await supabase.rpc("admin_set_uid" as never, { _handle: target.handle, _uid: n } as never);
+        if (error) throw new Error(error.message);
+      }} fields={[{ key: "uid", label: "New UID", placeholder: String(target.uid ?? 1) }]} onDone={onRefresh} />
+
+      <Tool title="Change handle" onRun={async (vals) => {
+        const { error } = await supabase.rpc("admin_change_handle" as never, { _old: target.handle, _new: vals.next } as never);
+        if (error) throw new Error(error.message);
+      }} fields={[{ key: "next", label: "New handle", placeholder: "newhandle" }]} onDone={onRefresh} />
+
+      <Tool title="Set views" onRun={async (vals) => {
+        const n = parseInt(vals.views, 10); if (!Number.isFinite(n)) throw new Error("views must be a number");
+        const { error } = await supabase.rpc("admin_set_views" as never, { _handle: target.handle, _views: n } as never);
+        if (error) throw new Error(error.message);
+      }} fields={[{ key: "views", label: "Total views", placeholder: String(target.views) }]} onDone={onRefresh} />
+
+      <Tool title="Set plan" onRun={async (vals) => {
+        const { error } = await supabase.rpc("admin_set_plan" as never, { _handle: target.handle, _plan: vals.plan } as never);
+        if (error) throw new Error(error.message);
+      }} fields={[{ key: "plan", label: "Plan name", placeholder: "premium" }]} onDone={onRefresh} />
+
+      <BadgesTool target={target} onDone={onRefresh} />
+
+      <Tool title="Hard ban (blocks profile + flagged)" danger onRun={async (vals) => {
+        const { error } = await supabase.rpc("admin_set_ban" as never, { _handle: target.handle, _hard: true, _soft: false, _reason: vals.reason } as never);
+        if (error) throw new Error(error.message);
+      }} fields={[{ key: "reason", label: "Reason", placeholder: "spam" }]} onDone={onRefresh} />
+
+      <Tool title="Soft ban (hides profile, no account block)" onRun={async (vals) => {
+        const { error } = await supabase.rpc("admin_set_ban" as never, { _handle: target.handle, _hard: false, _soft: true, _reason: vals.reason } as never);
+        if (error) throw new Error(error.message);
+      }} fields={[{ key: "reason", label: "Reason", placeholder: "report" }]} onDone={onRefresh} />
+
+      <Tool title="Unban (clear both)" onRun={async () => {
+        const { error } = await supabase.rpc("admin_set_ban" as never, { _handle: target.handle, _hard: false, _soft: false, _reason: null } as never);
+        if (error) throw new Error(error.message);
+      }} fields={[]} onDone={onRefresh} buttonLabel="Unban" />
+
+      <Tool title="Wipe customization (avatar/bg/music/css/cursor)" danger onRun={async () => {
+        const { error } = await supabase.rpc("admin_wipe_customization" as never, { _handle: target.handle } as never);
+        if (error) throw new Error(error.message);
+      }} fields={[]} onDone={onRefresh} buttonLabel="Wipe media" />
+
+      <Tool title="Clear bio + display name" onRun={async () => {
+        const { error } = await supabase.rpc("admin_clear_bio" as never, { _handle: target.handle } as never);
+        if (error) throw new Error(error.message);
+      }} fields={[]} onDone={onRefresh} buttonLabel="Clear" />
+
+      <Tool title="Toggle marketplace listing" onRun={async (vals) => {
+        const price = vals.price ? Number(vals.price) : null;
+        const { error } = await supabase.rpc("admin_set_sale" as never, { _handle: target.handle, _for_sale: !target.for_sale, _price: price } as never);
+        if (error) throw new Error(error.message);
+      }} fields={[{ key: "price", label: "Price (USD, optional)", placeholder: "100" }]} onDone={onRefresh} buttonLabel={target.for_sale ? "Unlist" : "List"} />
+
+      <Tool title="Grant / revoke admin" onRun={async (vals) => {
+        const next = vals.admin === "true";
+        const { error } = await supabase.rpc("admin_set_admin" as never, { _handle: target.handle, _admin: next } as never);
+        if (error) throw new Error(error.message);
+      }} fields={[{ key: "admin", label: "true or false", placeholder: target.is_admin ? "false" : "true" }]} onDone={onRefresh} />
+
+      <Tool title="DELETE profile (irreversible)" danger onRun={async (vals) => {
+        if (vals.confirm !== target.handle) throw new Error(`Type "${target.handle}" to confirm`);
+        const { error } = await supabase.rpc("admin_delete_profile" as never, { _handle: target.handle } as never);
+        if (error) throw new Error(error.message);
+        toast.success(`Deleted @${target.handle}`);
+        onCleared();
+      }} fields={[{ key: "confirm", label: `Type "${target.handle}" to confirm`, placeholder: target.handle }]} onDone={() => {}} buttonLabel="Delete forever" />
+    </section>
+  );
+}
+
+function BadgesTool({ target, onDone }: { target: ProfileLite; onDone: () => void }) {
+  const [selected, setSelected] = useState<string[]>(target.badges ?? []);
+  const [busy, setBusy] = useState(false);
+  function toggle(key: string) {
+    setSelected((s) => s.includes(key) ? s.filter((x) => x !== key) : [...s, key]);
+  }
+  async function save() {
+    setBusy(true);
+    const { error } = await supabase.rpc("admin_set_badges" as never, { _handle: target.handle, _badges: selected } as never);
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Badges updated");
+    onDone();
+  }
+  return (
+    <div className="rounded-xl border border-border bg-input/30 p-4">
+      <p className="text-sm font-bold uppercase tracking-wider">Force-set badges</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {Object.entries(BADGE_DEFS).map(([key, b]) => {
+          const on = selected.includes(key);
+          const I = b.icon;
+          return (
+            <button key={key} type="button" onClick={() => toggle(key)}
+              className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold uppercase ${on ? "border-primary bg-primary/10" : "border-border text-muted-foreground"}`}>
+              <I size={14} color={b.color} /> {b.label}
+            </button>
+          );
+        })}
+      </div>
+      <Button onClick={save} disabled={busy} className="mt-4 glow-crime font-bold uppercase">{busy ? "Saving..." : "Save badges"}</Button>
+    </div>
+  );
+}
+
+function Tool({
+  title, fields, onRun, onDone, danger, buttonLabel,
+}: {
+  title: string;
+  fields: { key: string; label: string; placeholder?: string }[];
+  onRun: (vals: Record<string, string>) => Promise<void>;
+  onDone: () => void;
+  danger?: boolean;
+  buttonLabel?: string;
+}) {
+  const [vals, setVals] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState(false);
+  async function run() {
+    setBusy(true);
+    try { await onRun(vals); toast.success(`${title} ✓`); onDone(); setVals({}); }
+    catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
+    finally { setBusy(false); }
+  }
+  return (
+    <div className={`rounded-xl border p-4 ${danger ? "border-red-500/30 bg-red-500/5" : "border-border bg-input/30"}`}>
+      <p className={`text-sm font-bold uppercase tracking-wider ${danger ? "text-red-400" : ""}`}>{title}</p>
+      {fields.length > 0 && (
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {fields.map((f) => (
+            <div key={f.key}>
+              <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">{f.label}</Label>
+              <Input value={vals[f.key] ?? ""} placeholder={f.placeholder}
+                onChange={(e) => setVals({ ...vals, [f.key]: e.target.value })} className="mt-1" />
+            </div>
+          ))}
+        </div>
+      )}
+      <Button onClick={run} disabled={busy}
+        className={`mt-3 font-bold uppercase ${danger ? "bg-red-500 hover:bg-red-600" : "glow-crime"}`}>
+        {busy ? "Running..." : (buttonLabel ?? "Run")}
+      </Button>
+    </div>
+  );
+}

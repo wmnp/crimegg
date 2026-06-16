@@ -20,7 +20,7 @@ export const Route = createFileRoute("/u/$handle")({
     const handle = params.handle.toLowerCase();
     const { data: profile } = await supabase
       .from("profiles").select("*").eq("handle", handle).maybeSingle();
-    if (!profile) throw notFound();
+    if (!profile || profile.banned || profile.soft_banned) throw notFound();
     const [{ data: links }, { data: guestbook }] = await Promise.all([
       supabase.from("links").select("*").eq("profile_id", profile.id).order("sort_order"),
       supabase.from("guestbook").select("*").eq("profile_id", profile.id).order("created_at", { ascending: false }).limit(30),

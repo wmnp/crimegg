@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { FollowButton } from "@/components/follow-button";
-import { VerifiedBadge, RealBadge } from "@/components/badge-verified";
+
 import { EmojiRain, AnimatedBgStyles, ANIMATED_BG_PRESETS } from "@/components/emoji-rain";
 
 export const Route = createFileRoute("/u/$handle")({

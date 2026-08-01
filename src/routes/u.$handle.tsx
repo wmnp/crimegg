@@ -6,6 +6,7 @@ import {
   CursorTrail, ScanlinesOverlay, MusicVisualizer, type Effect,
 } from "@/components/profile-effects";
 import { THEMES, BADGE_DEFS } from "@/lib/themes";
+import { BadgeIcon } from "@/components/badge-icon";
 import { Volume2, VolumeX, Share2, MessageSquare, Eye, Tag, Hash } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -198,11 +199,7 @@ function ProfileView() {
 
             {profile.badges.length > 0 && (
               <div className="mt-3 flex flex-wrap justify-center gap-2 items-center">
-                {profile.badges.map((b) => {
-                  const def = BADGE_DEFS[b]; if (!def) return null;
-                  const Icon = def.icon;
-                  return <Icon key={b} size={20} color={def.color} aria-label={def.label} />;
-                })}
+                {profile.badges.map((b) => <BadgeIcon key={b} badge={b} size={20} />)}
               </div>
             )}
 

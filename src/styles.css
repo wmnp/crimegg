@@ -91,3 +91,12 @@
     border: 1px solid oklch(1 0 0 / 0.06);
   }
 }
+
+/* Chroma (rainbow) badge icons */
+@keyframes badge-chroma-spin {
+  from { filter: hue-rotate(0deg) saturate(1.6); }
+  to { filter: hue-rotate(360deg) saturate(1.6); }
+}
+.badge-chroma {
+  animation: badge-chroma-spin 4s linear infinite;
+}

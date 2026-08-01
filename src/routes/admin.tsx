@@ -4,20 +4,24 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Shield, Search, ArrowLeft } from "lucide-react";
+import { Shield, Search, ArrowLeft, RefreshCw, Link2, Sparkles } from "lucide-react";
 import { BADGE_DEFS } from "@/lib/themes";
+import { BadgeIcon } from "@/components/badge-icon";
+import { useAppConfig, CONFIG_DEFAULTS } from "@/lib/app-config";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin Panel — crime.gg" }, { name: "robots", content: "noindex" }] }),
   component: AdminPanel,
 });
 
+const PROFILE_COLS =
+  "id, handle, uid, views, plan, is_admin, banned, soft_banned, ban_reason, badges, unlocked_badges, for_sale, sale_price, display_name, avatar_url";
+
 type ProfileLite = {
   id: string; handle: string; uid: number | null; views: number; plan: string;
   is_admin: boolean; banned: boolean; soft_banned: boolean; ban_reason: string | null;
-  badges: string[]; for_sale: boolean; sale_price: number | null;
+  badges: string[]; unlocked_badges: string[]; for_sale: boolean; sale_price: number | null;
   display_name: string | null; avatar_url: string | null;
 };
 
@@ -43,9 +47,7 @@ function AdminPanel() {
     const h = query.trim().toLowerCase().replace(/^@/, "");
     if (!h) return;
     setSearchBusy(true);
-    const { data, error } = await supabase.from("profiles")
-      .select("id, handle, uid, views, plan, is_admin, banned, soft_banned, ban_reason, badges, for_sale, sale_price, display_name, avatar_url")
-      .eq("handle", h).maybeSingle();
+    const { data, error } = await supabase.from("profiles").select(PROFILE_COLS).eq("handle", h).maybeSingle();
     setSearchBusy(false);
     if (error) return toast.error(error.message);
     if (!data) return toast.error(`No profile @${h}`);
@@ -54,9 +56,7 @@ function AdminPanel() {
 
   async function refresh() {
     if (!target) return;
-    const { data } = await supabase.from("profiles")
-      .select("id, handle, uid, views, plan, is_admin, banned, soft_banned, ban_reason, badges, for_sale, sale_price, display_name, avatar_url")
-      .eq("id", target.id).maybeSingle();
+    const { data } = await supabase.from("profiles").select(PROFILE_COLS).eq("id", target.id).maybeSingle();
     if (data) setTarget(data as ProfileLite);
   }
 
@@ -68,7 +68,8 @@ function AdminPanel() {
           <Shield className="mx-auto h-10 w-10 text-amber-400" />
           <h1 className="mt-4 text-2xl font-black uppercase">Forbidden</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            You don't have admin powers. Get them at <Link to="/admins" className="text-primary underline">/admins</Link>.
+            Admin is granted by your Discord role — sync it at{" "}
+            <Link to="/admins" className="text-primary underline">/admins</Link>.
           </p>
           <Link to="/dashboard" className="mt-6 inline-block text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground">← back to dashboard</Link>
         </div>
@@ -93,6 +94,8 @@ function AdminPanel() {
         </div>
       </header>
       <main className="mx-auto max-w-6xl space-y-6 px-4 py-6">
+        <ConfigPanel />
+
         <section className="glass rounded-2xl p-5">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">Find profile by handle</Label>
           <div className="mt-2 flex gap-2">
@@ -107,6 +110,92 @@ function AdminPanel() {
         {target && <TargetActions target={target} onRefresh={refresh} onCleared={() => setTarget(null)} />}
       </main>
     </div>
+  );
+}
+
+function ConfigPanel() {
+  const { config, reload } = useAppConfig();
+  const [draft, setDraft] = useState<Record<string, string>>({});
+  const [busy, setBusy] = useState<string | null>(null);
+
+  const val = (k: string) => draft[k] ?? config[k] ?? CONFIG_DEFAULTS[k] ?? "";
+
+  async function save(keys: string[], label: string) {
+    setBusy(label);
+    try {
+      for (const k of keys) {
+        const v = val(k).trim();
+        if (v === (config[k] ?? "")) continue;
+        const { error } = await supabase.rpc("admin_set_config" as never, { _key: k, _value: v } as never);
+        if (error) throw new Error(error.message);
+      }
+      await reload();
+      setDraft({});
+      toast.success(`${label} saved`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed");
+    } finally { setBusy(null); }
+  }
+
+  const roleKeys = Object.entries(BADGE_DEFS)
+    .filter(([, b]) => b.roleKey)
+    .map(([key, b]) => ({ badge: key, label: b.label, configKey: b.roleKey as string }));
+
+  return (
+    <section className="glass space-y-6 rounded-2xl p-5">
+      <div>
+        <p className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider">
+          <Link2 className="h-4 w-4 text-[#7e8aff]" /> Discord invite link
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Used everywhere on the site (header, footer, dashboard, admin gate). Change it here to refresh it site-wide.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Input value={val("discord_invite")} className="min-w-[260px] flex-1"
+            onChange={(e) => setDraft({ ...draft, discord_invite: e.target.value })}
+            placeholder="https://discord.gg/..." />
+          <Button onClick={() => save(["discord_invite"], "Discord link")} disabled={busy === "Discord link"}
+            className="glow-crime font-bold uppercase">
+            <RefreshCw className={`h-4 w-4 ${busy === "Discord link" ? "animate-spin" : ""}`} /> Refresh link
+          </Button>
+          <Button variant="outline" onClick={() => reload()}>Reload config</Button>
+        </div>
+      </div>
+
+      <div className="border-t border-border pt-5">
+        <p className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider">
+          <Sparkles className="h-4 w-4 text-primary" /> Discord role names per badge
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Exact role names in the server (case-insensitive). Users unlock a badge when they have the matching role.
+        </p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          {roleKeys.map((r) => (
+            <div key={r.configKey}>
+              <Label className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
+                <BadgeIcon badge={r.badge} size={14} /> {r.label} role
+              </Label>
+              <Input value={val(r.configKey)} className="mt-1"
+                onChange={(e) => setDraft({ ...draft, [r.configKey]: e.target.value })} />
+            </div>
+          ))}
+          <div>
+            <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Famous — followers needed</Label>
+            <Input value={val("famous_followers")} className="mt-1"
+              onChange={(e) => setDraft({ ...draft, famous_followers: e.target.value })} />
+          </div>
+          <div>
+            <Label className="text-[10px] uppercase tracking-wider text-muted-foreground">Famous — views needed</Label>
+            <Input value={val("famous_views")} className="mt-1"
+              onChange={(e) => setDraft({ ...draft, famous_views: e.target.value })} />
+          </div>
+        </div>
+        <Button className="glow-crime mt-4 font-bold uppercase" disabled={busy === "Badge roles"}
+          onClick={() => save([...roleKeys.map((r) => r.configKey), "famous_followers", "famous_views"], "Badge roles")}>
+          {busy === "Badge roles" ? "Saving..." : "Save badge roles"}
+        </Button>
+      </div>
+    </section>
   );
 }
 
@@ -156,7 +245,52 @@ function TargetActions({ target, onRefresh, onCleared }: { target: ProfileLite; 
         if (error) throw new Error(error.message);
       }} fields={[{ key: "plan", label: "Plan name", placeholder: "premium" }]} onDone={onRefresh} />
 
+      <UnlockedBadgesTool target={target} onDone={onRefresh} />
+
       <BadgesTool target={target} onDone={onRefresh} />
+
+      <Tool title="Quick: unlock every badge" onRun={async () => {
+        const all = Object.keys(BADGE_DEFS);
+        const { error } = await supabase.rpc("admin_set_unlocked_badges" as never, { _handle: target.handle, _badges: all } as never);
+        if (error) throw new Error(error.message);
+      }} fields={[]} onDone={onRefresh} buttonLabel="Unlock all" />
+
+      <Tool title="Quick: strip all badges (equipped + unlocked)" danger onRun={async () => {
+        const a = await supabase.rpc("admin_set_unlocked_badges" as never, { _handle: target.handle, _badges: [] } as never);
+        if (a.error) throw new Error(a.error.message);
+        const b = await supabase.rpc("admin_set_badges" as never, { _handle: target.handle, _badges: [] } as never);
+        if (b.error) throw new Error(b.error.message);
+      }} fields={[]} onDone={onRefresh} buttonLabel="Strip badges" />
+
+      <Tool title="Quick: reset views to 0" onRun={async () => {
+        const { error } = await supabase.rpc("admin_set_views" as never, { _handle: target.handle, _views: 0 } as never);
+        if (error) throw new Error(error.message);
+      }} fields={[]} onDone={onRefresh} buttonLabel="Reset views" />
+
+      <Tool title="Quick: grant premium" onRun={async () => {
+        const { error } = await supabase.rpc("admin_set_plan" as never, { _handle: target.handle, _plan: "premium" } as never);
+        if (error) throw new Error(error.message);
+      }} fields={[]} onDone={onRefresh} buttonLabel="Make premium" />
+
+      <Tool title="Quick: downgrade to free" onRun={async () => {
+        const { error } = await supabase.rpc("admin_set_plan" as never, { _handle: target.handle, _plan: "free" } as never);
+        if (error) throw new Error(error.message);
+      }} fields={[]} onDone={onRefresh} buttonLabel="Make free" />
+
+      <Tool title="Add views (booster)" onRun={async (vals) => {
+        const n = parseInt(vals.amount, 10);
+        if (!Number.isFinite(n) || n <= 0) throw new Error("Enter a positive number");
+        const { error } = await supabase.rpc("add_profile_views" as never, { _handle: target.handle, _amount: n } as never);
+        if (error) throw new Error(error.message);
+      }} fields={[{ key: "amount", label: "Views to add", placeholder: "1000" }]} onDone={onRefresh} buttonLabel="Add views" />
+
+      <Tool title="Nuke: ban + wipe media + clear bio" danger onRun={async (vals) => {
+        const a = await supabase.rpc("admin_set_ban" as never, { _handle: target.handle, _hard: true, _soft: false, _reason: vals.reason || "nuked" } as never);
+        if (a.error) throw new Error(a.error.message);
+        await supabase.rpc("admin_wipe_customization" as never, { _handle: target.handle } as never);
+        await supabase.rpc("admin_clear_bio" as never, { _handle: target.handle } as never);
+      }} fields={[{ key: "reason", label: "Reason", placeholder: "tos" }]} onDone={onRefresh} buttonLabel="Nuke profile" />
+
 
       <Tool title="Hard ban (blocks profile + flagged)" danger onRun={async (vals) => {
         const { error } = await supabase.rpc("admin_set_ban" as never, { _handle: target.handle, _hard: true, _soft: false, _reason: vals.reason } as never);
@@ -206,6 +340,40 @@ function TargetActions({ target, onRefresh, onCleared }: { target: ProfileLite; 
   );
 }
 
+function UnlockedBadgesTool({ target, onDone }: { target: ProfileLite; onDone: () => void }) {
+  const [selected, setSelected] = useState<string[]>(target.unlocked_badges ?? []);
+  const [busy, setBusy] = useState(false);
+  function toggle(key: string) {
+    setSelected((s) => (s.includes(key) ? s.filter((x) => x !== key) : [...s, key]));
+  }
+  async function save() {
+    setBusy(true);
+    const { error } = await supabase.rpc("admin_set_unlocked_badges" as never, { _handle: target.handle, _badges: selected } as never);
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Unlocked badges updated");
+    onDone();
+  }
+  return (
+    <div className="rounded-xl border border-border bg-input/30 p-4">
+      <p className="text-sm font-bold uppercase tracking-wider">Unlocked badges (what they're allowed to equip)</p>
+      <p className="mt-1 text-xs text-muted-foreground">Discord sync overwrites role-based unlocks on the user's next sync.</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {Object.entries(BADGE_DEFS).map(([key, b]) => {
+          const on = selected.includes(key);
+          return (
+            <button key={key} type="button" onClick={() => toggle(key)}
+              className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold uppercase ${on ? "border-primary bg-primary/10" : "border-border text-muted-foreground"}`}>
+              <BadgeIcon badge={key} size={14} /> {b.label}
+            </button>
+          );
+        })}
+      </div>
+      <Button onClick={save} disabled={busy} className="glow-crime mt-4 font-bold uppercase">{busy ? "Saving..." : "Save unlocks"}</Button>
+    </div>
+  );
+}
+
 function BadgesTool({ target, onDone }: { target: ProfileLite; onDone: () => void }) {
   const [selected, setSelected] = useState<string[]>(target.badges ?? []);
   const [busy, setBusy] = useState(false);
@@ -226,11 +394,10 @@ function BadgesTool({ target, onDone }: { target: ProfileLite; onDone: () => voi
       <div className="mt-3 flex flex-wrap gap-2">
         {Object.entries(BADGE_DEFS).map(([key, b]) => {
           const on = selected.includes(key);
-          const I = b.icon;
           return (
             <button key={key} type="button" onClick={() => toggle(key)}
               className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold uppercase ${on ? "border-primary bg-primary/10" : "border-border text-muted-foreground"}`}>
-              <I size={14} color={b.color} /> {b.label}
+              <BadgeIcon badge={key} size={14} /> {b.label}
             </button>
           );
         })}

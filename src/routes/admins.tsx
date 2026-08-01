@@ -1,11 +1,12 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Shield } from "lucide-react";
+import { Shield, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { syncDiscordAdmin } from "@/lib/discord.functions";
+import { useAppConfig } from "@/lib/app-config";
 
 export const Route = createFileRoute("/admins")({
   head: () => ({ meta: [{ title: "Admin Access — crime.gg" }, { name: "robots", content: "noindex" }] }),
@@ -14,21 +15,42 @@ export const Route = createFileRoute("/admins")({
 
 function AdminsGate() {
   const navigate = useNavigate();
-  const [handle, setHandle] = useState("");
-  const [password, setPassword] = useState("");
+  const syncAdmin = useServerFn(syncDiscordAdmin);
+  const { config } = useAppConfig();
+  const [me, setMe] = useState<{ handle: string; is_admin: boolean; discord_id: string | null } | null>(null);
+  const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
-  async function grant() {
-    const h = handle.trim().toLowerCase().replace(/^@/, "");
-    if (!h || !password) return toast.error("Handle and password required");
+  useEffect(() => {
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { navigate({ to: "/auth", search: { mode: "signin" } }); return; }
+      const { data } = await supabase.from("profiles")
+        .select("handle, is_admin, discord_id").eq("id", user.id).maybeSingle();
+      setMe(data as never);
+      setLoading(false);
+    })();
+  }, [navigate]);
+
+  async function run() {
     setBusy(true);
-    const { data, error } = await supabase.rpc("grant_admin" as never, { _handle: h, _password: password } as never);
-    setBusy(false);
-    if (error) return toast.error(error.message);
-    if (!data) return toast.error("Wrong password or handle not found");
-    toast.success(`@${h} is now admin. Sign in to use the panel.`);
-    navigate({ to: "/admin" });
+    try {
+      const res = await syncAdmin();
+      setMe((m) => (m ? { ...m, is_admin: res.isAdmin } : m));
+      if (res.isAdmin) {
+        toast.success(`@${res.handle} is an admin`);
+        navigate({ to: "/admin" });
+      } else {
+        toast.error(`You don't have the "${res.role}" role in the Discord server`);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Sync failed");
+    } finally {
+      setBusy(false);
+    }
   }
+
+  if (loading) return <div className="grid min-h-screen place-items-center text-muted-foreground">loading...</div>;
 
   return (
     <div className="min-h-screen grid place-items-center px-4">
@@ -38,21 +60,30 @@ function AdminsGate() {
           <h1 className="text-2xl font-black uppercase">Admin Access</h1>
         </div>
         <p className="text-sm text-muted-foreground">
-          Enter a handle and the admin password to grant admin powers on that account.
+          Admin is granted by your Discord role. Link your Discord in the dashboard, make sure you
+          have the <span className="font-bold text-foreground">{config.role_admin}</span> role in{" "}
+          <a href={config.discord_invite} target="_blank" rel="noreferrer" className="text-[#7e8aff] underline">
+            the server
+          </a>, then sync.
         </p>
-        <div className="mt-6 space-y-3">
-          <div>
-            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Handle</Label>
-            <Input value={handle} onChange={(e) => setHandle(e.target.value)} placeholder="yourhandle" className="mt-1" />
-          </div>
-          <div>
-            <Label className="text-xs uppercase tracking-wider text-muted-foreground">Password</Label>
-            <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="mt-1" />
-          </div>
-          <Button onClick={grant} disabled={busy} className="glow-crime w-full font-bold uppercase">
-            {busy ? "Granting..." : "Grant admin"}
+
+        {me && !me.discord_id && (
+          <p className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300">
+            No Discord linked yet — <Link to="/dashboard" className="underline">link it in the dashboard</Link> first.
+          </p>
+        )}
+
+        <Button onClick={run} disabled={busy} className="glow-crime mt-6 w-full font-bold uppercase">
+          <RefreshCw className={`h-4 w-4 ${busy ? "animate-spin" : ""}`} />
+          {busy ? "Syncing roles..." : "Sync admin from Discord"}
+        </Button>
+
+        {me?.is_admin && (
+          <Button asChild variant="outline" className="mt-3 w-full font-bold uppercase">
+            <Link to="/admin">Open admin panel</Link>
           </Button>
-        </div>
+        )}
+
         <Link to="/" className="mt-6 block text-center text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground">← back home</Link>
       </div>
     </div>

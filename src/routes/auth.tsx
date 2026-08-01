@@ -10,6 +10,9 @@ import { signupNow } from "@/lib/auth.functions";
 import { Header, Footer } from "./index";
 
 export const Route = createFileRoute("/auth")({
+  validateSearch: (search: Record<string, unknown>): { mode?: "signin" | "signup" } => ({
+    mode: search.mode === "signin" ? "signin" : search.mode === "signup" ? "signup" : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Sign in — crime.gg" },
@@ -20,7 +23,8 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
-  const [mode, setMode] = useState<"signin" | "signup">("signup");
+  const { mode: initialMode } = Route.useSearch();
+  const [mode, setMode] = useState<"signin" | "signup">(initialMode ?? "signup");
   return (
     <div className="min-h-screen">
       <Header />

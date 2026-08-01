@@ -11,11 +11,13 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import {
   Trash2, Plus, ExternalLink, LogOut, Upload, Download, Eye,
-  User, Image as ImageIcon, Palette, Sparkles, AtSign, Wrench, TrendingUp, Tag, Hash, MessageCircle, BadgeCheck, Shield,
+  User, Image as ImageIcon, Palette, Sparkles, AtSign, Wrench, TrendingUp, Tag, Hash, MessageCircle, BadgeCheck, Shield, Lock,
 } from "lucide-react";
 import { uploadProfileMedia } from "@/lib/storage";
 import { EFFECT_OPTIONS, type Effect } from "@/components/profile-effects";
-import { THEMES, BADGE_DEFS, DISCORD_INVITE } from "@/lib/themes";
+import { THEMES, BADGE_DEFS, isBadgeUnlocked } from "@/lib/themes";
+import { BadgeIcon } from "@/components/badge-icon";
+import { useAppConfig, useDiscordInvite } from "@/lib/app-config";
 import { ANIMATED_BG_PRESETS } from "@/components/emoji-rain";
 
 import { buildDiscordOAuthUrl, syncDiscordBadges, unlinkDiscord } from "@/lib/discord.functions";
@@ -34,7 +36,7 @@ type Profile = {
   effect: string; card_opacity: number;
   intro_enabled: boolean; intro_text: string | null;
   theme: string; glow_text: boolean; cursor_trail: boolean; scanlines: boolean;
-  badges: string[]; visualizer: boolean; blur_amount: number; views: number;
+  badges: string[]; unlocked_badges: string[]; visualizer: boolean; blur_amount: number; views: number;
   for_sale: boolean; sale_price: number | null;
   avatar_shape: string; link_style: string; bg_blur: number;
   tilt_card: boolean; hide_views: boolean; text_align: string;
@@ -62,6 +64,8 @@ type TabId = (typeof TABS)[number]["id"];
 
 function Dashboard() {
   const navigate = useNavigate();
+  const { config } = useAppConfig();
+  const invite = config.discord_invite;
   const [profile, setProfile] = useState<Profile | null>(null);
   const [original, setOriginal] = useState<Profile | null>(null);
   const [links, setLinks] = useState<LinkRow[]>([]);
@@ -96,10 +100,12 @@ function Dashboard() {
 
   async function saveProfile() {
     if (!profile) return;
-    const { id, handle, plan, views, ...rest } = profile;
-    const { error } = await supabase.from("profiles").update(rest as never).eq("id", id);
+    // server-controlled fields are never sent from the client
+    const { id, handle, plan, views, unlocked_badges, is_admin, uid, discord_id, discord_username, ...rest } = profile;
+    const badges = profile.badges.filter((b) => isBadgeUnlocked(b, unlocked_badges));
+    const { error } = await supabase.from("profiles").update({ ...rest, badges } as never).eq("id", id);
     if (error) toast.error(error.message);
-    else { toast.success("Saved!"); setOriginal(profile); }
+    else { toast.success("Saved!"); setOriginal({ ...profile, badges }); setProfile({ ...profile, badges }); }
   }
 
   function undoChanges() {
@@ -147,6 +153,10 @@ function Dashboard() {
 
   function toggleBadge(b: string) {
     if (!profile) return;
+    if (!isBadgeUnlocked(b, profile.unlocked_badges)) {
+      toast.error(`${BADGE_DEFS[b]?.label ?? "That badge"} is locked — ${BADGE_DEFS[b]?.hint ?? "not unlocked yet"}`);
+      return;
+    }
     const has = profile.badges.includes(b);
     patch("badges", has ? profile.badges.filter((x) => x !== b) : [...profile.badges, b]);
   }
@@ -234,18 +244,26 @@ function Dashboard() {
           {tab === "badges" && (
             <Section title="Badges">
               <p className="text-sm text-muted-foreground">
-                Click to equip or unequip. Verified / OG / Staff / VIP are granted by your <a href={DISCORD_INVITE} target="_blank" rel="noreferrer" className="text-primary underline">Discord</a> role — re-syncing will re-grant them if you still have the role.
+                Locked badges need the matching role in the{" "}
+                <a href={invite} target="_blank" rel="noreferrer" className="text-primary underline">Discord</a> server —
+                link Discord and hit <span className="font-bold text-foreground">Sync badges</span> to unlock. Famous also
+                unlocks at {Number(config.famous_followers).toLocaleString()} followers or {Number(config.famous_views).toLocaleString()} views.
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 {Object.entries(BADGE_DEFS).map(([key, b]) => {
+                  const unlocked = isBadgeUnlocked(key, profile.unlocked_badges);
                   const on = profile.badges.includes(key);
-                  const I = b.icon;
                   return (
                     <button key={key} type="button" onClick={() => toggleBadge(key)}
-                      className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-bold uppercase tracking-wider transition ${on ? "border-primary bg-primary/10" : "border-border text-muted-foreground hover:border-primary/40"}`}>
-                      <I size={20} color={b.color} />
-                      <span style={on ? { color: b.color } : undefined}>{b.label}</span>
-                      <span className="text-[10px] opacity-60">{b.source === "discord" ? "discord" : "free"}</span>
+                      title={unlocked ? undefined : b.hint}
+                      className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-bold uppercase tracking-wider transition ${
+                        !unlocked ? "cursor-not-allowed border-border/60 bg-black/20 text-muted-foreground/60"
+                          : on ? "border-primary bg-primary/10" : "border-border text-muted-foreground hover:border-primary/40"}`}>
+                      <span className={unlocked ? "" : "grayscale opacity-50"}><BadgeIcon badge={key} size={20} /></span>
+                      <span style={on && unlocked ? { color: b.color } : undefined}>{b.label}</span>
+                      {unlocked
+                        ? <span className="text-[10px] opacity-60">{b.source === "self" ? "free" : b.source === "auto" ? "earned" : "discord"}</span>
+                        : <Lock size={13} className="opacity-70" />}
                     </button>
                   );
                 })}
@@ -254,11 +272,7 @@ function Dashboard() {
                 <p className="text-xs uppercase tracking-wider text-muted-foreground">Equipped order (left → right on profile)</p>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   {profile.badges.length === 0 && <span className="text-sm text-muted-foreground">none equipped</span>}
-                  {profile.badges.map((b) => {
-                    const def = BADGE_DEFS[b]; if (!def) return null;
-                    const I = def.icon;
-                    return <I key={b} size={22} color={def.color} aria-label={def.label} />;
-                  })}
+                  {profile.badges.map((b) => <BadgeIcon key={b} badge={b} size={22} />)}
                 </div>
               </div>
             </Section>
@@ -596,11 +610,7 @@ function LivePreview({ profile, links }: { profile: Profile; links: LinkRow[] })
           <p className="text-xs opacity-70">@{profile.handle}</p>
           {profile.badges.length > 0 && (
             <div className="mt-2 flex flex-wrap justify-center gap-1.5 items-center">
-              {profile.badges.map((b) => {
-                const def = BADGE_DEFS[b]; if (!def) return null;
-                const I = def.icon;
-                return <I key={b} size={16} color={def.color} aria-label={def.label} />;
-              })}
+              {profile.badges.map((b) => <BadgeIcon key={b} badge={b} size={16} />)}
             </div>
           )}
           {profile.bio && <p className="mt-3 whitespace-pre-wrap text-xs opacity-90">{profile.bio}</p>}
@@ -783,6 +793,7 @@ function DiscordPanel({ profile, onUpdate }: { profile: Profile; onUpdate: (p: P
   const buildUrl = useServerFn(buildDiscordOAuthUrl);
   const sync = useServerFn(syncDiscordBadges);
   const unlink = useServerFn(unlinkDiscord);
+  const invite = useDiscordInvite();
   const [busy, setBusy] = useState<string | null>(null);
 
   async function link() {
@@ -793,9 +804,9 @@ function DiscordPanel({ profile, onUpdate }: { profile: Profile; onUpdate: (p: P
   async function doSync() {
     setBusy("sync");
     try {
-      const { badges, granted } = await sync();
-      onUpdate({ ...profile, badges });
-      toast.success(granted.length ? `Synced: ${granted.join(", ")}` : "No matching roles found");
+      const { badges, unlocked, granted } = await sync();
+      onUpdate({ ...profile, badges, unlocked_badges: unlocked });
+      toast.success(granted.length ? `Unlocked: ${granted.join(", ")}` : "No matching roles found");
     } catch (e) { toast.error(e instanceof Error ? e.message : "Failed"); }
     finally { setBusy(null); }
   }
@@ -836,7 +847,7 @@ function DiscordPanel({ profile, onUpdate }: { profile: Profile; onUpdate: (p: P
           )}
         </div>
         <p className="mt-3 text-xs text-muted-foreground">
-          Need a role? Join the server: <a href={DISCORD_INVITE} target="_blank" rel="noreferrer" className="text-[#7e8aff] underline">{DISCORD_INVITE}</a>
+          Need a role? Join the server: <a href={invite} target="_blank" rel="noreferrer" className="text-[#7e8aff] underline">{invite}</a>
         </p>
       </Section>
     </>

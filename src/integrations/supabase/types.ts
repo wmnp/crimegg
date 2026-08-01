@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_config: {
+        Row: {
+          created_at: string
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          key: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          created_at?: string
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       followers: {
         Row: {
           created_at: string
@@ -201,6 +222,7 @@ export type Database = {
           theme: string
           tilt_card: boolean
           uid: number | null
+          unlocked_badges: string[]
           updated_at: string
           views: number
           visualizer: boolean
@@ -250,6 +272,7 @@ export type Database = {
           theme?: string
           tilt_card?: boolean
           uid?: number | null
+          unlocked_badges?: string[]
           updated_at?: string
           views?: number
           visualizer?: boolean
@@ -299,6 +322,7 @@ export type Database = {
           theme?: string
           tilt_card?: boolean
           uid?: number | null
+          unlocked_badges?: string[]
           updated_at?: string
           views?: number
           visualizer?: boolean
@@ -337,6 +361,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      admin_set_config: {
+        Args: { _key: string; _value: string }
+        Returns: boolean
+      }
       admin_set_plan: {
         Args: { _handle: string; _plan: string }
         Returns: boolean
@@ -347,6 +375,10 @@ export type Database = {
       }
       admin_set_uid: {
         Args: { _handle: string; _uid: number }
+        Returns: boolean
+      }
+      admin_set_unlocked_badges: {
+        Args: { _badges: string[]; _handle: string }
         Returns: boolean
       }
       admin_set_views: {

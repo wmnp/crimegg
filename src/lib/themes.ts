@@ -1,4 +1,4 @@
-import { BadgeCheck, Hammer, Crown, Star, Diamond, type LucideIcon } from "lucide-react";
+import { BadgeCheck, Hammer, Crown, Star, Diamond, Video, Flame, ShieldCheck, type LucideIcon } from "lucide-react";
 
 export type ThemePreset = {
   id: string;
@@ -19,13 +19,38 @@ export const THEMES: ThemePreset[] = [
   { id: "vapor", name: "Vapor", accent: "#22d3ee", bgGradient: "linear-gradient(180deg, #581c87, #155e75 100%)", description: "vaporwave" },
 ];
 
-// Badges are pure icons (no filled background). `source: discord` = synced from role; user CAN unequip locally but next sync will re-grant if the role is still there.
-export const BADGE_DEFS: Record<string, { label: string; icon: LucideIcon; color: string; source: "discord" | "self" }> = {
-  verified: { label: "Verified", icon: BadgeCheck, color: "#1d8bf8", source: "discord" },
-  og:       { label: "OG",       icon: Star,       color: "#f59e0b", source: "discord" },
-  staff:    { label: "Staff",    icon: Hammer,     color: "#7c8aff", source: "discord" },
-  vip:      { label: "VIP",      icon: Crown,      color: "#f59e0b", source: "discord" },
+export type BadgeDef = {
+  label: string;
+  icon: LucideIcon;
+  color: string;
+  /** discord = unlocked by a role in the server, auto = unlocked by stats, self = free for everyone */
+  source: "discord" | "auto" | "self";
+  /** app_config key holding the Discord role name required (discord/auto badges) */
+  roleKey?: string;
+  /** rainbow animated icon */
+  chroma?: boolean;
+  hint?: string;
+};
+
+// Badges are pure icons (no filled background).
+export const BADGE_DEFS: Record<string, BadgeDef> = {
+  verified: { label: "Verified", icon: BadgeCheck, color: "#1d8bf8", source: "discord", roleKey: "role_verified", hint: "Get the Verified role in Discord" },
+  og:       { label: "OG",       icon: Star,       color: "#f59e0b", source: "discord", roleKey: "role_og", hint: "Get the OG role in Discord" },
+  staff:    { label: "Staff",    icon: Hammer,     color: "#7c8aff", source: "discord", roleKey: "role_staff", hint: "Staff only" },
+  vip:      { label: "VIP",      icon: Crown,      color: "#f59e0b", source: "discord", roleKey: "role_vip", hint: "Get the VIP role in Discord" },
+  admin:    { label: "Admin",    icon: ShieldCheck, color: "#fbbf24", source: "discord", roleKey: "role_admin", hint: "Admins only" },
+  creator:  { label: "Content Creator", icon: Video, color: "#a855f7", source: "discord", roleKey: "role_content_creator", chroma: true, hint: "Get the Content Creator role in Discord" },
+  famous:   { label: "Famous",   icon: Flame,      color: "#f97316", source: "auto", roleKey: "role_famous", hint: "Hit the follower or view milestone (or get the role)" },
   rare:     { label: "Rare",     icon: Diamond,    color: "#ec4899", source: "self" },
 };
 
-export const DISCORD_INVITE = "https://discord.gg/MmkRt6mYV";
+/** Fallback invite — the live one lives in app_config.discord_invite (editable in the admin panel). */
+export const DISCORD_INVITE = "https://discord.gg/EtMy9KMHJ";
+
+/** "self" badges are free for everyone; everything else must be unlocked (Discord role or milestone). */
+export function isBadgeUnlocked(key: string, unlocked: string[] | null | undefined): boolean {
+  const def = BADGE_DEFS[key];
+  if (!def) return false;
+  if (def.source === "self") return true;
+  return (unlocked ?? []).includes(key);
+}

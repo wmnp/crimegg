@@ -340,6 +340,40 @@ function TargetActions({ target, onRefresh, onCleared }: { target: ProfileLite; 
   );
 }
 
+function UnlockedBadgesTool({ target, onDone }: { target: ProfileLite; onDone: () => void }) {
+  const [selected, setSelected] = useState<string[]>(target.unlocked_badges ?? []);
+  const [busy, setBusy] = useState(false);
+  function toggle(key: string) {
+    setSelected((s) => (s.includes(key) ? s.filter((x) => x !== key) : [...s, key]));
+  }
+  async function save() {
+    setBusy(true);
+    const { error } = await supabase.rpc("admin_set_unlocked_badges" as never, { _handle: target.handle, _badges: selected } as never);
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success("Unlocked badges updated");
+    onDone();
+  }
+  return (
+    <div className="rounded-xl border border-border bg-input/30 p-4">
+      <p className="text-sm font-bold uppercase tracking-wider">Unlocked badges (what they're allowed to equip)</p>
+      <p className="mt-1 text-xs text-muted-foreground">Discord sync overwrites role-based unlocks on the user's next sync.</p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {Object.entries(BADGE_DEFS).map(([key, b]) => {
+          const on = selected.includes(key);
+          return (
+            <button key={key} type="button" onClick={() => toggle(key)}
+              className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold uppercase ${on ? "border-primary bg-primary/10" : "border-border text-muted-foreground"}`}>
+              <BadgeIcon badge={key} size={14} /> {b.label}
+            </button>
+          );
+        })}
+      </div>
+      <Button onClick={save} disabled={busy} className="glow-crime mt-4 font-bold uppercase">{busy ? "Saving..." : "Save unlocks"}</Button>
+    </div>
+  );
+}
+
 function BadgesTool({ target, onDone }: { target: ProfileLite; onDone: () => void }) {
   const [selected, setSelected] = useState<string[]>(target.badges ?? []);
   const [busy, setBusy] = useState(false);
@@ -360,11 +394,10 @@ function BadgesTool({ target, onDone }: { target: ProfileLite; onDone: () => voi
       <div className="mt-3 flex flex-wrap gap-2">
         {Object.entries(BADGE_DEFS).map(([key, b]) => {
           const on = selected.includes(key);
-          const I = b.icon;
           return (
             <button key={key} type="button" onClick={() => toggle(key)}
               className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold uppercase ${on ? "border-primary bg-primary/10" : "border-border text-muted-foreground"}`}>
-              <I size={14} color={b.color} /> {b.label}
+              <BadgeIcon badge={key} size={14} /> {b.label}
             </button>
           );
         })}

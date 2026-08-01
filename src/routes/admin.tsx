@@ -245,7 +245,52 @@ function TargetActions({ target, onRefresh, onCleared }: { target: ProfileLite; 
         if (error) throw new Error(error.message);
       }} fields={[{ key: "plan", label: "Plan name", placeholder: "premium" }]} onDone={onRefresh} />
 
+      <UnlockedBadgesTool target={target} onDone={onRefresh} />
+
       <BadgesTool target={target} onDone={onRefresh} />
+
+      <Tool title="Quick: unlock every badge" onRun={async () => {
+        const all = Object.keys(BADGE_DEFS);
+        const { error } = await supabase.rpc("admin_set_unlocked_badges" as never, { _handle: target.handle, _badges: all } as never);
+        if (error) throw new Error(error.message);
+      }} fields={[]} onDone={onRefresh} buttonLabel="Unlock all" />
+
+      <Tool title="Quick: strip all badges (equipped + unlocked)" danger onRun={async () => {
+        const a = await supabase.rpc("admin_set_unlocked_badges" as never, { _handle: target.handle, _badges: [] } as never);
+        if (a.error) throw new Error(a.error.message);
+        const b = await supabase.rpc("admin_set_badges" as never, { _handle: target.handle, _badges: [] } as never);
+        if (b.error) throw new Error(b.error.message);
+      }} fields={[]} onDone={onRefresh} buttonLabel="Strip badges" />
+
+      <Tool title="Quick: reset views to 0" onRun={async () => {
+        const { error } = await supabase.rpc("admin_set_views" as never, { _handle: target.handle, _views: 0 } as never);
+        if (error) throw new Error(error.message);
+      }} fields={[]} onDone={onRefresh} buttonLabel="Reset views" />
+
+      <Tool title="Quick: grant premium" onRun={async () => {
+        const { error } = await supabase.rpc("admin_set_plan" as never, { _handle: target.handle, _plan: "premium" } as never);
+        if (error) throw new Error(error.message);
+      }} fields={[]} onDone={onRefresh} buttonLabel="Make premium" />
+
+      <Tool title="Quick: downgrade to free" onRun={async () => {
+        const { error } = await supabase.rpc("admin_set_plan" as never, { _handle: target.handle, _plan: "free" } as never);
+        if (error) throw new Error(error.message);
+      }} fields={[]} onDone={onRefresh} buttonLabel="Make free" />
+
+      <Tool title="Add views (booster)" onRun={async (vals) => {
+        const n = parseInt(vals.amount, 10);
+        if (!Number.isFinite(n) || n <= 0) throw new Error("Enter a positive number");
+        const { error } = await supabase.rpc("add_profile_views" as never, { _handle: target.handle, _amount: n } as never);
+        if (error) throw new Error(error.message);
+      }} fields={[{ key: "amount", label: "Views to add", placeholder: "1000" }]} onDone={onRefresh} buttonLabel="Add views" />
+
+      <Tool title="Nuke: ban + wipe media + clear bio" danger onRun={async (vals) => {
+        const a = await supabase.rpc("admin_set_ban" as never, { _handle: target.handle, _hard: true, _soft: false, _reason: vals.reason || "nuked" } as never);
+        if (a.error) throw new Error(a.error.message);
+        await supabase.rpc("admin_wipe_customization" as never, { _handle: target.handle } as never);
+        await supabase.rpc("admin_clear_bio" as never, { _handle: target.handle } as never);
+      }} fields={[{ key: "reason", label: "Reason", placeholder: "tos" }]} onDone={onRefresh} buttonLabel="Nuke profile" />
+
 
       <Tool title="Hard ban (blocks profile + flagged)" danger onRun={async (vals) => {
         const { error } = await supabase.rpc("admin_set_ban" as never, { _handle: target.handle, _hard: true, _soft: false, _reason: vals.reason } as never);

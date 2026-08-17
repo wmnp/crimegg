@@ -7,7 +7,7 @@ import {
 } from "@/components/profile-effects";
 import { THEMES, BADGE_DEFS } from "@/lib/themes";
 import { BadgeIcon } from "@/components/badge-icon";
-import { Volume2, VolumeX, Share2, MessageSquare, Eye, Tag, Hash } from "lucide-react";
+import { Volume2, VolumeX, Share2, MessageSquare, Eye, Hash } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -248,12 +248,6 @@ function ProfileView() {
               </button>
             </div>
 
-            {profile.for_sale && (
-              <div className="mt-4 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-bold uppercase tracking-wider animate-pulse"
-                style={{ borderColor: accent, backgroundColor: `${accent}22`, color: accent, boxShadow: `0 0 24px -6px ${accent}` }}>
-                <Tag className="h-3 w-3" /> handle for sale {profile.sale_price != null ? `· $${Number(profile.sale_price).toLocaleString()}` : "· make offer"}
-              </div>
-            )}
           </div>
 
           {showGb && (

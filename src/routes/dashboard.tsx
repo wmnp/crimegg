@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { useServerFn } from "@tanstack/react-start";
 import {
   Trash2, Plus, ExternalLink, LogOut, Upload, Download, Eye,
-  User, Image as ImageIcon, Palette, Sparkles, AtSign, Wrench, TrendingUp, Tag, Hash, MessageCircle, BadgeCheck, Shield, Lock,
+  User, Image as ImageIcon, Palette, Sparkles, AtSign, Wrench, TrendingUp, Hash, MessageCircle, BadgeCheck, Shield, Lock,
 } from "lucide-react";
 import { uploadProfileMedia } from "@/lib/storage";
 import { EFFECT_OPTIONS, type Effect } from "@/components/profile-effects";
@@ -56,7 +56,6 @@ const TABS = [
   { id: "effects", label: "Effects", icon: Sparkles, adminOnly: false },
   { id: "discord", label: "Discord", icon: MessageCircle, adminOnly: false },
   { id: "handle", label: "Handle", icon: AtSign, adminOnly: false },
-  { id: "market", label: "Market", icon: Tag, adminOnly: false },
   { id: "views", label: "Views", icon: TrendingUp, adminOnly: true },
   { id: "tools", label: "Tools", icon: Wrench, adminOnly: false },
 ] as const;
@@ -486,25 +485,6 @@ function Dashboard() {
           )}
 
           {tab === "views" && profile.is_admin && <ViewBooster ownHandle={profile.handle} onBoosted={(h, total) => { if (h === profile.handle.toLowerCase()) { setProfile({ ...profile, views: total }); setOriginal((o) => o ? { ...o, views: total } : o); } }} />}
-
-          {tab === "market" && (
-            <Section title="List your handle for sale">
-              <p className="text-sm text-muted-foreground">
-                Toggle this on to put your handle on the public <Link to="/market" className="text-primary underline">marketplace</Link>. Buyers contact you through your profile links.
-              </p>
-              <div className="mt-4 space-y-4">
-                <Toggle label={`List @${profile.handle} on the marketplace`}
-                  hint="Your profile gets a 'for sale' badge and appears at /market."
-                  checked={profile.for_sale} onChange={(v) => patch("for_sale", v)} />
-                <Field label="Asking price (USD) — leave blank for 'make offer'">
-                  <Input type="number" min={0} step="1"
-                    value={profile.sale_price ?? ""}
-                    onChange={(e) => patch("sale_price", e.target.value === "" ? null : Number(e.target.value))}
-                    placeholder="e.g. 100" />
-                </Field>
-              </div>
-            </Section>
-          )}
 
           {tab === "tools" && (
             <Section title="Tools">

@@ -25,7 +25,9 @@ function Landing() {
         <section className="relative overflow-hidden px-6 pt-28 pb-32 text-center">
           <div className="absolute inset-0 -z-10 animate-pulse opacity-40 [animation-duration:6s]"
             style={{ background: "radial-gradient(circle at 50% 0%, var(--crime-glow), transparent 60%)" }} />
-          <CrimeLogo size={72} className="animate-float-soft mb-8" />
+          <div className="mb-8 flex justify-center">
+            <CrimeLogo size={72} className="animate-float-soft" />
+          </div>
           <p className="reveal-in mb-6 inline-block rounded-full border border-border bg-card/60 px-4 py-1.5 text-xs uppercase tracking-[0.2em] text-muted-foreground backdrop-blur">
             Invite-only · v1.0
           </p>

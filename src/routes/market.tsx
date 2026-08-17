@@ -4,6 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useDiscordInvite } from "@/lib/app-config";
 import { Hash, AtSign, Clock, Sparkles } from "lucide-react";
+import { CrimeLogo } from "@/components/crime-logo";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { Reveal } from "@/components/reveal";
 
 export const Route = createFileRoute("/market")({
   head: () => ({
@@ -68,9 +71,10 @@ function Market() {
   const [takenUids, setTakenUids] = useState<Set<number>>(new Set());
   const [takenHandles, setTakenHandles] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
-  const [now, setNow] = useState(() => Date.now());
+  const [now, setNow] = useState(0);
 
   useEffect(() => {
+    setNow(Date.now());
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, []);
@@ -118,16 +122,17 @@ function Market() {
     <div className="min-h-screen">
       <header className="sticky top-0 z-30 border-b border-border/40 bg-background/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <Link to="/" className="text-xl font-black sm:text-2xl">crime<span className="text-gradient-crime">.gg</span></Link>
-          <nav className="flex gap-3 text-sm">
-            <Link to="/pricing" className="text-muted-foreground hover:text-foreground">pricing</Link>
-            <Link to="/dashboard" className="text-muted-foreground hover:text-foreground">dashboard</Link>
+          <Link to="/" className="flex items-center"><CrimeLogo size={26} withWordmark /></Link>
+          <nav className="flex items-center gap-3 text-sm">
+            <Link to="/pricing" className="underline-sweep text-muted-foreground hover:text-foreground">pricing</Link>
+            <Link to="/dashboard" className="underline-sweep text-muted-foreground hover:text-foreground">dashboard</Link>
+            <ThemeToggle />
           </nav>
         </div>
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-10">
-        <div className="mb-8 text-center">
+        <div className="reveal-in mb-8 text-center">
           <h1 className="text-4xl font-black uppercase sm:text-6xl">
             rare <span className="text-gradient-crime">shop</span>
           </h1>
@@ -136,7 +141,7 @@ function Market() {
           </p>
           <div className="mt-5 inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-1.5 text-sm font-bold tabular-nums">
             <Clock className="h-4 w-4 text-primary" />
-            next drop in {hh}h {mm}m {ss}s
+            {now === 0 ? "next drop soon" : `next drop in ${hh}h ${mm}m ${ss}s`}
           </div>
         </div>
 
@@ -146,15 +151,15 @@ function Market() {
           <>
             <SectionHeader icon={<Hash className="h-4 w-4" />} title="Low UIDs" note="under 50 · 20 EUR — 50 to 100 · 10 EUR — above 100 · 5 EUR" />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {uids.map((u) => (
-                <Card key={`uid-${u.value}`} label={`UID #${u.value}`} sub={u.value < 50 ? "ultra rare" : u.value <= 100 ? "rare" : "collector"} price={u.price} invite={invite} />
+              {uids.map((u, i) => (
+                <Reveal key={`uid-${u.value}`} delay={i * 70}><Card label={`UID #${u.value}`} sub={u.value < 50 ? "ultra rare" : u.value <= 100 ? "rare" : "collector"} price={u.price} invite={invite} /></Reveal>
               ))}
             </div>
 
             <SectionHeader icon={<AtSign className="h-4 w-4" />} title="Rare handles" note="1 char · 25 EUR — symbol combos · 20 EUR — 2 char · 12 EUR" />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {handles.map((h) => (
-                <Card key={`h-${h.value}`} label={`@${h.value}`} sub={h.value.length === 1 ? "single character" : "short handle"} price={h.price} invite={invite} />
+              {handles.map((h, i) => (
+                <Reveal key={`h-${h.value}`} delay={i * 70}><Card label={`@${h.value}`} sub={h.value.length === 1 ? "single character" : "short handle"} price={h.price} invite={invite} /></Reveal>
               ))}
             </div>
           </>
@@ -175,7 +180,7 @@ function SectionHeader({ icon, title, note }: { icon: React.ReactNode; title: st
 
 function Card({ label, sub, price, invite }: { label: string; sub: string; price: number; invite: string }) {
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-border bg-card p-5 transition hover:border-primary">
+    <div className="lift group relative h-full overflow-hidden rounded-2xl border border-border bg-card p-5 hover:border-primary">
       <div className="flex items-start justify-between">
         <div className="min-w-0">
           <p className="truncate text-2xl font-black">{label}</p>

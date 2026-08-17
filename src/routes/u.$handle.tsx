@@ -7,7 +7,7 @@ import {
 } from "@/components/profile-effects";
 import { THEMES, BADGE_DEFS } from "@/lib/themes";
 import { BadgeIcon } from "@/components/badge-icon";
-import { Volume2, VolumeX, Share2, MessageSquare, Eye, Tag, Hash } from "lucide-react";
+import { Volume2, VolumeX, Share2, MessageSquare, Eye, Hash } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

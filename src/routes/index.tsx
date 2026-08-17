@@ -96,7 +96,7 @@ export function Header() {
         </Link>
         <nav className="hidden items-center gap-8 text-sm font-medium text-muted-foreground sm:flex">
           <Link to="/pricing" className="transition hover:text-foreground">Pricing</Link>
-          <Link to="/market" className="transition hover:text-foreground">Market</Link>
+          <Link to="/market" className="transition hover:text-foreground">Rare shop</Link>
           <a href={invite} target="_blank" rel="noreferrer" className="transition hover:text-foreground">Discord</a>
         </nav>
         <div className="flex items-center gap-2">

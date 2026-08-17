@@ -317,12 +317,6 @@ function TargetActions({ target, onRefresh, onCleared }: { target: ProfileLite; 
         if (error) throw new Error(error.message);
       }} fields={[]} onDone={onRefresh} buttonLabel="Clear" />
 
-      <Tool title="Toggle marketplace listing" onRun={async (vals) => {
-        const price = vals.price ? Number(vals.price) : null;
-        const { error } = await supabase.rpc("admin_set_sale" as never, { _handle: target.handle, _for_sale: !target.for_sale, _price: price } as never);
-        if (error) throw new Error(error.message);
-      }} fields={[{ key: "price", label: "Price (USD, optional)", placeholder: "100" }]} onDone={onRefresh} buttonLabel={target.for_sale ? "Unlist" : "List"} />
-
       <Tool title="Grant / revoke admin" onRun={async (vals) => {
         const next = vals.admin === "true";
         const { error } = await supabase.rpc("admin_set_admin" as never, { _handle: target.handle, _admin: next } as never);

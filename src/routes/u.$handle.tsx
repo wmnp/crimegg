@@ -248,12 +248,6 @@ function ProfileView() {
               </button>
             </div>
 
-            {profile.for_sale && (
-              <div className="mt-4 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-bold uppercase tracking-wider animate-pulse"
-                style={{ borderColor: accent, backgroundColor: `${accent}22`, color: accent, boxShadow: `0 0 24px -6px ${accent}` }}>
-                <Tag className="h-3 w-3" /> handle for sale {profile.sale_price != null ? `· $${Number(profile.sale_price).toLocaleString()}` : "· make offer"}
-              </div>
-            )}
           </div>
 
           {showGb && (

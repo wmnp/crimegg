@@ -64,6 +64,29 @@
 
 .dark { }
 
+/* ---------- light mode (toggled by the sun in the header) ---------- */
+html.light {
+  --background: oklch(0.98 0.008 60);
+  --foreground: oklch(0.17 0.02 20);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.17 0.02 20);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.17 0.02 20);
+  --primary: oklch(0.56 0.22 25);
+  --primary-foreground: oklch(0.99 0 0);
+  --secondary: oklch(0.95 0.01 40);
+  --secondary-foreground: oklch(0.2 0.02 20);
+  --muted: oklch(0.95 0.01 40);
+  --muted-foreground: oklch(0.45 0.03 25);
+  --accent: oklch(0.93 0.04 40);
+  --accent-foreground: oklch(0.2 0.02 20);
+  --border: oklch(0.88 0.01 40);
+  --input: oklch(0.92 0.01 40);
+  --ring: oklch(0.56 0.22 25);
+  --crime: oklch(0.56 0.22 25);
+  --crime-glow: oklch(0.68 0.2 45);
+}
+
 @layer base {
   * { border-color: var(--color-border); }
   body {
@@ -73,6 +96,20 @@
       radial-gradient(circle at 20% 10%, oklch(0.18 0.08 25 / 0.4), transparent 50%),
       radial-gradient(circle at 80% 90%, oklch(0.15 0.06 15 / 0.4), transparent 50%);
     min-height: 100vh;
+    transition: background-color 0.6s ease, color 0.4s ease;
+  }
+  html.light body {
+    background-image:
+      radial-gradient(circle at 20% 10%, oklch(0.9 0.09 60 / 0.55), transparent 50%),
+      radial-gradient(circle at 80% 90%, oklch(0.9 0.06 30 / 0.5), transparent 50%);
+  }
+  html { scroll-behavior: smooth; }
+  a, button, input, textarea, select, [role="button"] {
+    transition: color 0.25s ease, background-color 0.25s ease, border-color 0.25s ease,
+      box-shadow 0.3s ease, opacity 0.25s ease, transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   }
   h1, h2, h3 { letter-spacing: -0.02em; }
 }
@@ -89,8 +126,63 @@
     background: oklch(0.12 0.015 20 / 0.6);
     backdrop-filter: blur(20px);
     border: 1px solid oklch(1 0 0 / 0.06);
+    transition: background-color 0.5s ease, border-color 0.5s ease, transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.4s ease;
   }
+  html.light .glass {
+    background: oklch(1 0 0 / 0.72);
+    border: 1px solid oklch(0.2 0.02 20 / 0.08);
+    box-shadow: 0 18px 50px -28px oklch(0.4 0.06 30 / 0.4);
+  }
+  .lift:hover { transform: translateY(-4px) scale(1.012); box-shadow: 0 24px 60px -28px var(--crime-glow); }
+  .press:active { transform: scale(0.97); }
 }
+
+/* ---------- motion system ---------- */
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(26px) scale(0.985); filter: blur(6px); }
+  to { opacity: 1; transform: none; filter: blur(0); }
+}
+@keyframes glow-breathe {
+  0%, 100% { box-shadow: 0 0 24px -12px var(--crime-glow); }
+  50% { box-shadow: 0 0 56px -8px var(--crime-glow); }
+}
+@keyframes float-soft {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes shimmer-sweep {
+  from { background-position: -200% 0; }
+  to { background-position: 200% 0; }
+}
+@keyframes spin-slow { to { transform: rotate(360deg); } }
+@keyframes flare {
+  0% { opacity: 0; transform: scale(0.2); }
+  40% { opacity: 0.65; }
+  100% { opacity: 0; transform: scale(2.6); }
+}
+
+.reveal { opacity: 0; }
+.reveal-in { animation: rise-in 0.75s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-glow-breathe { animation: glow-breathe 3.6s ease-in-out infinite; }
+.animate-float-soft { animation: float-soft 5s ease-in-out infinite; }
+.animate-spin-slow { animation: spin-slow 14s linear infinite; }
+.shimmer {
+  background: linear-gradient(100deg, transparent 20%, oklch(1 0 0 / 0.28) 45%, transparent 70%);
+  background-size: 200% 100%;
+  animation: shimmer-sweep 2.8s ease-in-out infinite;
+}
+.theme-flare {
+  position: fixed; inset: 0; z-index: 9999; pointer-events: none;
+  background: radial-gradient(circle at var(--flare-x, 50%) var(--flare-y, 0%), var(--crime-glow), transparent 60%);
+  animation: flare 0.9s ease-out forwards;
+}
+.underline-sweep { position: relative; }
+.underline-sweep::after {
+  content: ""; position: absolute; left: 0; bottom: -3px; height: 1.5px; width: 100%;
+  background: var(--gradient-crime); transform: scaleX(0); transform-origin: right;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.underline-sweep:hover::after { transform: scaleX(1); transform-origin: left; }
 
 /* Chroma (rainbow) badge icons */
 @keyframes badge-chroma-spin {

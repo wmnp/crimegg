@@ -1,6 +1,8 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { CrimeLogo } from "@/components/crime-logo";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -176,8 +178,9 @@ function Dashboard() {
     <div className="min-h-screen">
       <header className="sticky top-0 z-30 border-b border-border/40 bg-background/80 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-          <Link to="/" className="text-xl font-black sm:text-2xl">crime<span className="text-gradient-crime">.gg</span></Link>
+          <Link to="/" className="flex items-center"><CrimeLogo size={26} withWordmark /></Link>
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             {dirty && <span className="hidden text-xs uppercase tracking-wider text-amber-400 sm:inline">● unsaved</span>}
             <Button asChild variant="outline" size="sm">
               <a href={`/u/${profile.handle}`} target="_blank" rel="noreferrer">

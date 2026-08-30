@@ -1,4 +1,4 @@
-import { BadgeCheck, Hammer, Crown, Star, Diamond, Video, Flame, ShieldCheck, type LucideIcon } from "lucide-react";
+import { BadgeCheck, Hammer, Crown, Star, Diamond, Video, Flame, ShieldCheck, Gem, type LucideIcon } from "lucide-react";
 
 export type ThemePreset = {
   id: string;

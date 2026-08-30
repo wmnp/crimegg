@@ -5,7 +5,7 @@ import {
   EffectsLayer, CustomFontInjector, CustomCursorInjector,
   CursorTrail, ScanlinesOverlay, MusicVisualizer, type Effect,
 } from "@/components/profile-effects";
-import { THEMES, BADGE_DEFS } from "@/lib/themes";
+import { THEMES, BADGE_DEFS, RARE_UID_MAX } from "@/lib/themes";
 import { BadgeIcon } from "@/components/badge-icon";
 import { Volume2, VolumeX, Share2, MessageSquare, Eye, Hash } from "lucide-react";
 import { toast } from "sonner";
@@ -199,7 +199,9 @@ function ProfileView() {
 
             {profile.badges.length > 0 && (
               <div className="mt-3 flex flex-wrap justify-center gap-2 items-center">
-                {profile.badges.map((b) => <BadgeIcon key={b} badge={b} size={20} />)}
+                {profile.badges
+                  .filter((b) => b !== "rare" || (profile.uid != null && profile.uid < RARE_UID_MAX))
+                  .map((b) => <BadgeTip key={b} badge={b} />)}
               </div>
             )}
 
@@ -277,6 +279,36 @@ function ProfileView() {
         </button>
       )}
     </div>
+  );
+}
+
+/** Badge with hover/click tooltip showing what the badge means. */
+function BadgeTip({ badge }: { badge: string }) {
+  const def = BADGE_DEFS[badge];
+  const [open, setOpen] = useState(false);
+  if (!def) return null;
+  return (
+    <span className="group relative inline-flex">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        onBlur={() => setOpen(false)}
+        className="transition hover:scale-125"
+        aria-label={`${def.label} badge`}>
+        <BadgeIcon badge={badge} size={20} />
+      </button>
+      <span
+        className={`pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-52 -translate-x-1/2 rounded-xl border p-3 text-left shadow-xl backdrop-blur-md transition-all duration-200
+          ${open ? "visible opacity-100 translate-y-0" : "invisible opacity-0 translate-y-1"}
+          group-hover:visible group-hover:opacity-100 group-hover:translate-y-0`}
+        style={{ backgroundColor: "rgba(0,0,0,0.85)", borderColor: `${def.color}66` }}>
+        <span className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider" style={{ color: def.color }}>
+          <BadgeIcon badge={badge} size={14} /> {def.label} badge
+        </span>
+        <span className="mt-1 block text-[11px] leading-snug text-white/80">{def.desc}</span>
+        <span className="absolute left-1/2 top-full -translate-x-1/2 border-8 border-transparent" style={{ borderTopColor: `${def.color}66` }} />
+      </span>
+    </span>
   );
 }
 

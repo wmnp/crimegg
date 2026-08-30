@@ -103,7 +103,7 @@ function Dashboard() {
     if (!profile) return;
     // server-controlled fields are never sent from the client
     const { id, handle, plan, views, unlocked_badges, is_admin, uid, discord_id, discord_username, ...rest } = profile;
-    const badges = profile.badges.filter((b) => isBadgeUnlocked(b, unlocked_badges));
+    const badges = profile.badges.filter((b) => isBadgeUnlocked(b, unlocked_badges, uid));
     const { error } = await supabase.from("profiles").update({ ...rest, badges } as never).eq("id", id);
     if (error) toast.error(error.message);
     else { toast.success("Saved!"); setOriginal({ ...profile, badges }); setProfile({ ...profile, badges }); }
@@ -154,7 +154,7 @@ function Dashboard() {
 
   function toggleBadge(b: string) {
     if (!profile) return;
-    if (!isBadgeUnlocked(b, profile.unlocked_badges)) {
+    if (!isBadgeUnlocked(b, profile.unlocked_badges, profile.uid)) {
       toast.error(`${BADGE_DEFS[b]?.label ?? "That badge"} is locked — ${BADGE_DEFS[b]?.hint ?? "not unlocked yet"}`);
       return;
     }
@@ -253,7 +253,7 @@ function Dashboard() {
               </p>
               <div className="mt-4 flex flex-wrap gap-2">
                 {Object.entries(BADGE_DEFS).map(([key, b]) => {
-                  const unlocked = isBadgeUnlocked(key, profile.unlocked_badges);
+                  const unlocked = isBadgeUnlocked(key, profile.unlocked_badges, profile.uid);
                   const on = profile.badges.includes(key);
                   return (
                     <button key={key} type="button" onClick={() => toggleBadge(key)}

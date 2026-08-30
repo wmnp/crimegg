@@ -60,8 +60,9 @@ function Landing() {
                 </div>
               </Reveal>
             ))}
-          </div>
+          <FeaturedProfiles />
         </section>
+
 
         <section className="px-6 pb-32">
           <div className="mx-auto max-w-5xl">

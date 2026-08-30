@@ -24,6 +24,7 @@ const BADGE_ROLE_KEYS: Record<string, string> = {
 };
 
 const DEFAULT_ROLES: ConfigMap = {
+  role_owner: "Owner",
   role_verified: "Verified",
   role_og: "OG",
   role_staff: "Staff",

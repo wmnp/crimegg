@@ -60,7 +60,9 @@ function Landing() {
                 </div>
               </Reveal>
             ))}
+          </div>
           <FeaturedProfiles />
+
         </section>
 
 

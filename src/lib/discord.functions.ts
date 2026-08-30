@@ -13,6 +13,7 @@ async function loadConfig(supabase: {
 
 /** badge key -> app_config key holding the required Discord role name */
 const BADGE_ROLE_KEYS: Record<string, string> = {
+  owner: "role_owner",
   verified: "role_verified",
   og: "role_og",
   staff: "role_staff",
@@ -23,6 +24,7 @@ const BADGE_ROLE_KEYS: Record<string, string> = {
 };
 
 const DEFAULT_ROLES: ConfigMap = {
+  role_owner: "Owner",
   role_verified: "Verified",
   role_og: "OG",
   role_staff: "Staff",

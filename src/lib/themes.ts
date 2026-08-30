@@ -1,4 +1,4 @@
-import { BadgeCheck, Hammer, Crown, Star, Diamond, Video, Flame, ShieldCheck, type LucideIcon } from "lucide-react";
+import { BadgeCheck, Hammer, Crown, Star, Diamond, Video, Flame, ShieldCheck, Gem, type LucideIcon } from "lucide-react";
 
 export type ThemePreset = {
   id: string;
@@ -34,6 +34,7 @@ export type BadgeDef = {
 
 // Badges are pure icons (no filled background).
 export const BADGE_DEFS: Record<string, BadgeDef> = {
+  owner:    { label: "Owner",    icon: Gem,        color: "#ef4444", source: "discord", roleKey: "role_owner", hint: "Owners only" },
   verified: { label: "Verified", icon: BadgeCheck, color: "#1d8bf8", source: "discord", roleKey: "role_verified", hint: "Get the Verified role in Discord" },
   og:       { label: "OG",       icon: Star,       color: "#f59e0b", source: "discord", roleKey: "role_og", hint: "Get the OG role in Discord" },
   staff:    { label: "Staff",    icon: Hammer,     color: "#7c8aff", source: "discord", roleKey: "role_staff", hint: "Staff only" },

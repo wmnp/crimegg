@@ -14,6 +14,7 @@ export const CONFIG_DEFAULTS: Record<string, string> = {
   role_famous: "Famous",
   famous_followers: "5000",
   famous_views: "1000",
+  featured_handles: "crimegg",
 };
 
 export type AppConfig = Record<string, string>;

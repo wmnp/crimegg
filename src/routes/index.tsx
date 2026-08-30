@@ -4,6 +4,8 @@ import { useDiscordInvite } from "@/lib/app-config";
 import { CrimeLogo } from "@/components/crime-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Reveal } from "@/components/reveal";
+import { FeaturedProfiles } from "@/components/featured-profiles";
+import { AtSign, Palette, Link2, Zap, Ticket, Gem } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({

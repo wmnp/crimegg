@@ -4,6 +4,7 @@ import { DISCORD_INVITE } from "@/lib/themes";
 
 export const CONFIG_DEFAULTS: Record<string, string> = {
   discord_invite: DISCORD_INVITE,
+  role_owner: "Owner",
   role_verified: "Verified",
   role_og: "OG",
   role_staff: "Staff",

@@ -201,7 +201,7 @@ function ProfileView() {
               <div className="mt-3 flex flex-wrap justify-center gap-2 items-center">
                 {profile.badges
                   .filter((b) => b !== "rare" || (profile.uid != null && profile.uid < RARE_UID_MAX))
-                  .map((b) => <BadgeTip key={b} badge={b} accent={accent} />)}
+                  .map((b) => <BadgeTip key={b} badge={b} />)}
               </div>
             )}
 
@@ -283,7 +283,7 @@ function ProfileView() {
 }
 
 /** Badge with hover/click tooltip showing what the badge means. */
-function BadgeTip({ badge, accent }: { badge: string; accent: string }) {
+function BadgeTip({ badge }: { badge: string }) {
   const def = BADGE_DEFS[badge];
   const [open, setOpen] = useState(false);
   if (!def) return null;

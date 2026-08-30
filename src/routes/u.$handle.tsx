@@ -199,7 +199,9 @@ function ProfileView() {
 
             {profile.badges.length > 0 && (
               <div className="mt-3 flex flex-wrap justify-center gap-2 items-center">
-                {profile.badges.map((b) => <BadgeIcon key={b} badge={b} size={20} />)}
+                {profile.badges
+                  .filter((b) => b !== "rare" || (profile.uid != null && profile.uid < RARE_UID_MAX))
+                  .map((b) => <BadgeTip key={b} badge={b} accent={accent} />)}
               </div>
             )}
 

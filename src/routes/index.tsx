@@ -4,6 +4,8 @@ import { useDiscordInvite } from "@/lib/app-config";
 import { CrimeLogo } from "@/components/crime-logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Reveal } from "@/components/reveal";
+import { FeaturedProfiles } from "@/components/featured-profiles";
+import { AtSign, Palette, Link2, Zap, Ticket, Gem } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -59,7 +61,10 @@ function Landing() {
               </Reveal>
             ))}
           </div>
+          <FeaturedProfiles />
+
         </section>
+
 
         <section className="px-6 pb-32">
           <div className="mx-auto max-w-5xl">
@@ -88,13 +93,14 @@ function Landing() {
 }
 
 const features = [
-  { icon: "🔫", title: "Custom handles", desc: "crime.gg/yourname. Two to twenty characters. First come, first served." },
-  { icon: "🎨", title: "Full customization", desc: "Accent colors, backgrounds, avatars. Make it yours." },
-  { icon: "🔗", title: "Unlimited links", desc: "Drop every socials, store, discord — all in one place." },
-  { icon: "⚡", title: "Lightning fast", desc: "Edge-hosted. Pages load before they finish typing." },
-  { icon: "🎟️", title: "Invite-only", desc: "Keeps the riff-raff out. You're already in if you have a code." },
-  { icon: "💎", title: "Premium tier", desc: "Animated backgrounds, custom fonts, badges, and more." },
+  { icon: AtSign, title: "Custom handles", desc: "crime.gg/yourname. One to twenty characters. First come, first served." },
+  { icon: Palette, title: "Full customization", desc: "Accent colors, backgrounds, avatars. Make it yours." },
+  { icon: Link2, title: "Unlimited links", desc: "Drop every socials, store, discord — all in one place." },
+  { icon: Zap, title: "Lightning fast", desc: "Edge-hosted. Pages load before they finish typing." },
+  { icon: Ticket, title: "Invite-only", desc: "Keeps the riff-raff out. You're already in if you have a code." },
+  { icon: Gem, title: "Premium tier", desc: "Animated backgrounds, custom fonts, badges, and more." },
 ];
+
 
 export function Header() {
   const invite = useDiscordInvite();

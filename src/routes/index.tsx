@@ -24,9 +24,18 @@ function Landing() {
     <div className="min-h-screen">
       <Header />
       <main>
-        <section className="relative overflow-hidden px-6 pt-28 pb-32 text-center">
-          <div className="absolute inset-0 -z-10 animate-pulse opacity-40 [animation-duration:6s]"
-            style={{ background: "radial-gradient(circle at 50% 0%, var(--crime-glow), transparent 60%)" }} />
+        <section className="relative isolate overflow-hidden px-6 pt-28 pb-32 text-center">
+          <div className="hero-aura" aria-hidden="true">
+            <div className="hero-aura-blob left-[8%] top-[10%] h-[42vw] w-[42vw] max-h-[560px] max-w-[560px]"
+              style={{ background: "var(--crime-glow)" }} />
+            <div className="hero-aura-blob right-[6%] top-0 h-[34vw] w-[34vw] max-h-[460px] max-w-[460px] [animation-delay:-6s] [animation-duration:24s]"
+              style={{ background: "color-mix(in oklab, var(--primary) 55%, transparent)" }} />
+            <div className="hero-aura-blob left-1/2 top-[28%] h-[28vw] w-[28vw] max-h-[380px] max-w-[380px] -translate-x-1/2 [animation-delay:-12s] [animation-duration:30s]"
+              style={{ background: "color-mix(in oklab, var(--accent) 45%, transparent)" }} />
+          </div>
+          <div className="hero-grid" aria-hidden="true" />
+
+          <div className="relative z-10">
           <div className="mb-8 flex justify-center">
             <CrimeLogo size={72} className="animate-float-soft" />
           </div>
@@ -62,8 +71,9 @@ function Landing() {
             ))}
           </div>
           <FeaturedProfiles />
-
+          </div>
         </section>
+
 
 
         <section className="px-6 pb-32">

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Shield, Search, ArrowLeft, RefreshCw, Link2, Sparkles } from "lucide-react";
+import { Shield, Search, ArrowLeft, RefreshCw, Link2, Sparkles, Users } from "lucide-react";
 import { BADGE_DEFS } from "@/lib/themes";
 import { BadgeIcon } from "@/components/badge-icon";
 import { useAppConfig, CONFIG_DEFAULTS } from "@/lib/app-config";

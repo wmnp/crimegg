@@ -72,16 +72,16 @@ export function FeaturedProfiles() {
             <div className="absolute inset-0 -z-10">
               {p.background_type === "video" && p.background_url ? (
                 <video src={p.background_url} muted loop autoPlay playsInline
-                  className="h-full w-full object-cover opacity-80 transition-transform duration-700 group-hover:scale-105" />
+                  className="h-full w-full object-cover opacity-90 transition-transform duration-700 group-hover:scale-105" />
               ) : p.background_url ? (
                 <img src={p.background_url} alt={`${p.handle} profile background`} loading="lazy"
-                  className="h-full w-full object-cover opacity-80 transition-transform duration-700 group-hover:scale-105" />
+                  className="h-full w-full object-cover opacity-90 transition-transform duration-700 group-hover:scale-105" />
               ) : (
-                <div className="h-full w-full" style={{ background: `linear-gradient(135deg, ${p.accent_color ?? "var(--primary)"}44 0%, var(--card) 100%)` }} />
+                <div className="h-full w-full" style={{ background: `linear-gradient(160deg, ${p.accent_color ?? "var(--primary)"}66 0%, ${p.accent_color ?? "var(--primary)"}22 45%, var(--card) 100%)` }} />
               )}
             </div>
             {/* bottom-heavy scrim so text stays readable over busy backgrounds while the top stays visible */}
-            <div className="absolute inset-0 -z-10 bg-gradient-to-t from-card via-card/60 to-transparent" />
+            <div className="absolute inset-0 -z-10 bg-gradient-to-t from-card via-card/50 to-transparent" />
 
             <div className="relative z-10 flex h-full flex-col justify-end p-5 pt-28">
               <div className={`h-16 w-16 overflow-hidden border-2 border-background/80 bg-muted shadow-lg ${p.avatar_shape === "square" ? "rounded-xl" : "rounded-full"}`}>

@@ -192,3 +192,39 @@ html.light {
 .badge-chroma {
   animation: badge-chroma-spin 4s linear infinite;
 }
+
+/* ---------- ambient hero background ---------- */
+@keyframes aura-drift {
+  0%   { transform: translate3d(-4%, -2%, 0) scale(1); }
+  50%  { transform: translate3d(4%, 3%, 0) scale(1.12); }
+  100% { transform: translate3d(-4%, -2%, 0) scale(1); }
+}
+@utility hero-aura {
+  position: absolute;
+  inset: -20% -10% auto -10%;
+  height: 120%;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, black 0%, black 55%, transparent 100%);
+}
+@utility hero-aura-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(90px);
+  opacity: 0.5;
+  will-change: transform;
+  animation: aura-drift 18s ease-in-out infinite;
+}
+@utility hero-grid {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, color-mix(in oklab, var(--border) 55%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklab, var(--border) 55%, transparent) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, black, transparent 75%);
+  opacity: 0.5;
+}

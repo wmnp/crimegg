@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Shield, Search, ArrowLeft, RefreshCw, Link2, Sparkles } from "lucide-react";
+import { Shield, Search, ArrowLeft, RefreshCw, Link2, Sparkles, Users } from "lucide-react";
 import { BADGE_DEFS } from "@/lib/themes";
 import { BadgeIcon } from "@/components/badge-icon";
 import { useAppConfig, CONFIG_DEFAULTS } from "@/lib/app-config";
@@ -145,6 +145,24 @@ function ConfigPanel() {
     <section className="glass space-y-6 rounded-2xl p-5">
       <div>
         <p className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider">
+          <Users className="h-4 w-4 text-primary" /> Featured profiles on the front page
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Add handles (one per line or comma-separated). Their avatar, background and bio show live on the landing page.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Input value={val("featured_handles")} className="min-w-[260px] flex-1"
+            onChange={(e) => setDraft({ ...draft, featured_handles: e.target.value })}
+            placeholder="crimegg, someoneelse" />
+          <Button onClick={() => save(["featured_handles"], "Featured profiles")} disabled={busy === "Featured profiles"}
+            className="glow-crime font-bold uppercase">
+            {busy === "Featured profiles" ? "Saving..." : "Save profiles"}
+          </Button>
+        </div>
+      </div>
+
+      <div className="border-t border-border pt-5">
+        <p className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider">
           <Link2 className="h-4 w-4 text-[#7e8aff]" /> Discord invite link
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
@@ -161,6 +179,7 @@ function ConfigPanel() {
           <Button variant="outline" onClick={() => reload()}>Reload config</Button>
         </div>
       </div>
+
 
       <div className="border-t border-border pt-5">
         <p className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider">

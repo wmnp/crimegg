@@ -75,9 +75,10 @@ function Landing() {
               {features.map((f, i) => (
                 <Reveal key={f.title} delay={i * 90}>
                   <div className="glass lift group h-full rounded-2xl p-6 hover:border-primary/40">
-                    <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-xl transition-transform duration-500 group-hover:-translate-y-1 group-hover:scale-110">
-                      {f.icon}
+                    <div className="mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary transition-transform duration-500 group-hover:-translate-y-1 group-hover:scale-110">
+                      <f.icon className="h-5 w-5" strokeWidth={1.75} />
                     </div>
+
                     <h3 className="text-lg font-bold">{f.title}</h3>
                     <p className="mt-2 text-sm text-muted-foreground">{f.desc}</p>
                   </div>

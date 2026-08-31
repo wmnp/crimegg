@@ -66,22 +66,25 @@ export function FeaturedProfiles() {
             key={p.handle}
             to="/u/$handle"
             params={{ handle: p.handle }}
-            className="glass lift group relative overflow-hidden rounded-2xl text-left hover:border-primary/40"
+            className="lift group relative min-h-[280px] overflow-hidden rounded-2xl border border-border/40 text-left hover:border-primary/40"
           >
-            <div className="relative h-24 overflow-hidden">
+            {/* full-card background */}
+            <div className="absolute inset-0 -z-10">
               {p.background_type === "video" && p.background_url ? (
                 <video src={p.background_url} muted loop autoPlay playsInline
-                  className="h-full w-full object-cover opacity-70 transition-transform duration-700 group-hover:scale-105" />
+                  className="h-full w-full object-cover opacity-90 transition-transform duration-700 group-hover:scale-105" />
               ) : p.background_url ? (
                 <img src={p.background_url} alt={`${p.handle} profile background`} loading="lazy"
-                  className="h-full w-full object-cover opacity-70 transition-transform duration-700 group-hover:scale-105" />
+                  className="h-full w-full object-cover opacity-90 transition-transform duration-700 group-hover:scale-105" />
               ) : (
-                <div className="h-full w-full" style={{ background: `linear-gradient(135deg, ${p.accent_color ?? "var(--primary)"}33, transparent)` }} />
+                <div className="h-full w-full" style={{ background: `linear-gradient(160deg, ${p.accent_color ?? "var(--primary)"}66 0%, ${p.accent_color ?? "var(--primary)"}22 45%, var(--card) 100%)` }} />
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-card to-transparent" />
             </div>
-            <div className="-mt-8 px-5 pb-5">
-              <div className={`h-16 w-16 overflow-hidden border-2 border-card bg-muted ${p.avatar_shape === "square" ? "rounded-xl" : "rounded-full"}`}>
+            {/* bottom-heavy scrim so text stays readable over busy backgrounds while the top stays visible */}
+            <div className="absolute inset-0 -z-10 bg-gradient-to-t from-card via-card/50 to-transparent" />
+
+            <div className="relative z-10 flex h-full flex-col justify-end p-5 pt-28">
+              <div className={`h-16 w-16 overflow-hidden border-2 border-background/80 bg-muted shadow-lg ${p.avatar_shape === "square" ? "rounded-xl" : "rounded-full"}`}>
                 {p.avatar_url ? (
                   <img src={p.avatar_url} alt={`${p.handle} avatar`} loading="lazy" className="h-full w-full object-cover" />
                 ) : (

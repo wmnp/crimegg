@@ -254,7 +254,7 @@ function TargetActions({ target, onRefresh, onCleared }: { target: ProfileLite; 
       <Tool title="Change handle" onRun={async (vals) => {
         const { error } = await supabase.rpc("admin_change_handle" as never, { _old: target.handle, _new: vals.next } as never);
         if (error) throw new Error(error.message);
-      }} fields={[{ key: "next", label: "New handle", placeholder: "newhandle" }]} onDone={onRefresh} />
+      }} fields={[{ key: "next", label: "New handle (any characters, 1-24)", placeholder: "@vx or ✦crime" }]} onDone={onRefresh} />
 
       <Tool title="Set views" onRun={async (vals) => {
         const n = parseInt(vals.views, 10); if (!Number.isFinite(n)) throw new Error("views must be a number");

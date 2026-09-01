@@ -96,6 +96,8 @@ function AdminPanel() {
       </header>
       <main className="mx-auto max-w-6xl space-y-6 px-4 py-6">
         <ConfigPanel />
+        <InvitePanel />
+
 
         <section className="glass rounded-2xl p-5">
           <Label className="text-xs uppercase tracking-wider text-muted-foreground">Find profile by handle</Label>

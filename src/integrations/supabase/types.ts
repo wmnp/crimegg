@@ -343,7 +343,20 @@ export type Database = {
         Returns: boolean
       }
       admin_clear_bio: { Args: { _handle: string }; Returns: boolean }
+      admin_create_invite: {
+        Args: { _code?: string; _uses?: number }
+        Returns: string
+      }
+      admin_delete_invite: { Args: { _code: string }; Returns: boolean }
       admin_delete_profile: { Args: { _handle: string }; Returns: boolean }
+      admin_list_invites: {
+        Args: never
+        Returns: {
+          code: string
+          created_at: string
+          uses_remaining: number
+        }[]
+      }
       admin_set_admin: {
         Args: { _admin: boolean; _handle: string }
         Returns: boolean
@@ -363,6 +376,10 @@ export type Database = {
       }
       admin_set_config: {
         Args: { _key: string; _value: string }
+        Returns: boolean
+      }
+      admin_set_invite_uses: {
+        Args: { _code: string; _uses: number }
         Returns: boolean
       }
       admin_set_plan: {

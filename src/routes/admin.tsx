@@ -9,6 +9,7 @@ import { Shield, Search, ArrowLeft, RefreshCw, Link2, Sparkles, Users } from "lu
 import { BADGE_DEFS } from "@/lib/themes";
 import { BadgeIcon } from "@/components/badge-icon";
 import { useAppConfig, CONFIG_DEFAULTS } from "@/lib/app-config";
+import { InvitePanel } from "@/components/invite-panel";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "Admin Panel — crime.gg" }, { name: "robots", content: "noindex" }] }),

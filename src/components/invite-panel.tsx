@@ -4,9 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Ticket, Copy, Trash2, RefreshCw, Plus } from "lucide-react";
+import { Ticket, Copy, Trash2, RefreshCw, Plus, Link2, Users } from "lucide-react";
 
 type Invite = { code: string; uses_remaining: number; created_at: string };
+type Redemption = { code: string; handle: string; created_at: string };
+
+function inviteLink(code: string) {
+  const origin = typeof window === "undefined" ? "" : window.location.origin;
+  return `${origin}/auth?mode=signup&code=${encodeURIComponent(code)}`;
+}
 
 export function InvitePanel() {
   const [rows, setRows] = useState<Invite[]>([]);
@@ -14,13 +20,18 @@ export function InvitePanel() {
   const [code, setCode] = useState("");
   const [uses, setUses] = useState("1");
   const [busy, setBusy] = useState(false);
+  const [uses_, setUsed] = useState<Redemption[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase.rpc("admin_list_invites" as never);
+    const [inv, red] = await Promise.all([
+      supabase.rpc("admin_list_invites" as never),
+      supabase.rpc("admin_list_invite_redemptions" as never),
+    ]);
     setLoading(false);
-    if (error) return toast.error(error.message);
-    setRows((data ?? []) as Invite[]);
+    if (inv.error) return toast.error(inv.error.message);
+    setRows((inv.data ?? []) as Invite[]);
+    if (!red.error) setUsed((red.data ?? []) as Redemption[]);
   }, []);
 
   useEffect(() => { void load(); }, [load]);
@@ -36,8 +47,8 @@ export function InvitePanel() {
     setCode("");
     await load();
     const made = String(data);
-    await navigator.clipboard?.writeText(made).catch(() => {});
-    toast.success(`Invite ${made} created — copied to clipboard`);
+    await navigator.clipboard?.writeText(inviteLink(made)).catch(() => {});
+    toast.success(`Invite ${made} created — sign-up link copied`);
   }
 
   async function setUsesFor(c: string, n: number) {
@@ -94,10 +105,18 @@ export function InvitePanel() {
                   {r.uses_remaining} uses left
                 </span>
                 <span className="text-[10px] text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</span>
+                <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                  <Users className="h-3 w-3" />
+                  {uses_.filter((u) => u.code === r.code).length} signed up
+                </span>
                 <div className="ml-auto flex items-center gap-1">
-                  <Button size="sm" variant="ghost" title="Copy"
-                    onClick={() => { void navigator.clipboard?.writeText(r.code); toast.success("Copied"); }}>
+                  <Button size="sm" variant="ghost" title="Copy code"
+                    onClick={() => { void navigator.clipboard?.writeText(r.code); toast.success("Code copied"); }}>
                     <Copy className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button size="sm" variant="ghost" title="Copy sign-up link"
+                    onClick={() => { void navigator.clipboard?.writeText(inviteLink(r.code)); toast.success("Link copied"); }}>
+                    <Link2 className="h-3.5 w-3.5" />
                   </Button>
                   <Button size="sm" variant="ghost" title="+10 uses"
                     onClick={() => void setUsesFor(r.code, r.uses_remaining + 10)}>+10</Button>
@@ -108,6 +127,26 @@ export function InvitePanel() {
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="border-t border-border pt-4">
+        <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider">
+          <Users className="h-3.5 w-3.5 text-primary" /> Who used which code
+        </p>
+        {uses_.length === 0 ? (
+          <p className="mt-2 text-xs text-muted-foreground">Nobody has signed up with a code yet.</p>
+        ) : (
+          <ul className="mt-2 space-y-1">
+            {uses_.map((u, i) => (
+              <li key={`${u.code}-${i}`} className="flex flex-wrap items-center gap-2 rounded-lg border border-border/50 bg-background/30 px-3 py-1.5 text-xs">
+                <span className="font-semibold">@{u.handle}</span>
+                <span className="text-muted-foreground">used</span>
+                <span className="font-mono text-primary">{u.code}</span>
+                <span className="ml-auto text-[10px] text-muted-foreground">{new Date(u.created_at).toLocaleString()}</span>
               </li>
             ))}
           </ul>

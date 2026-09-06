@@ -56,5 +56,8 @@ export const signupNow = createServerFn({ method: "POST" })
       .update({ uses_remaining: Math.max(0, invite.uses_remaining - 1) })
       .eq("code", data.inviteCode);
 
+    await supabaseAdmin.from("invite_redemptions")
+      .insert({ code: invite.code, user_id: userId, handle });
+
     return { ok: true, handle };
   });

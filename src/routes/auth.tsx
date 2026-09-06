@@ -10,8 +10,9 @@ import { signupNow } from "@/lib/auth.functions";
 import { Header, Footer } from "./index";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (search: Record<string, unknown>): { mode?: "signin" | "signup" } => ({
+  validateSearch: (search: Record<string, unknown>): { mode?: "signin" | "signup"; code?: string } => ({
     mode: search.mode === "signin" ? "signin" : search.mode === "signup" ? "signup" : undefined,
+    code: typeof search.code === "string" && search.code.length <= 64 ? search.code : undefined,
   }),
   head: () => ({
     meta: [
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/auth")({
 });
 
 function AuthPage() {
-  const { mode: initialMode } = Route.useSearch();
+  const { mode: initialMode, code } = Route.useSearch();
   const [mode, setMode] = useState<"signin" | "signup">(initialMode ?? "signup");
   return (
     <div className="min-h-screen">
@@ -34,11 +35,15 @@ function AuthPage() {
             {mode === "signup" ? "claim your handle" : "welcome back"}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            {mode === "signup" ? "Invite code required." : "Sign in to run your profile."}
+            {mode === "signup"
+              ? code
+                ? `Invite ${code} applied.`
+                : "Invite code required."
+              : "Sign in to run your profile."}
           </p>
         </div>
         <div className="glass rounded-2xl p-6">
-          {mode === "signup" ? <SignUp /> : <SignIn />}
+          {mode === "signup" ? <SignUp initialCode={code} /> : <SignIn />}
           <div className="mt-6 text-center text-sm text-muted-foreground">
             {mode === "signup" ? (
               <>Already have an account?{" "}
@@ -60,11 +65,11 @@ function AuthPage() {
   );
 }
 
-function SignUp() {
+function SignUp({ initialCode }: { initialCode?: string }) {
   const navigate = useNavigate();
   const signupFn = useServerFn(signupNow);
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ handle: "", email: "", password: "", inviteCode: "" });
+  const [form, setForm] = useState({ handle: "", email: "", password: "", inviteCode: initialCode ?? "" });
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();

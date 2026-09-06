@@ -36,7 +36,7 @@ function AuthPage() {
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             {mode === "signup"
-              ? initialCode || code
+              ? code
                 ? `Invite ${code} applied.`
                 : "Invite code required."
               : "Sign in to run your profile."}

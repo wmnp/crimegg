@@ -111,6 +111,30 @@ export type Database = {
         }
         Relationships: []
       }
+      invite_redemptions: {
+        Row: {
+          code: string
+          created_at: string
+          handle: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          handle: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          handle?: string
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       links: {
         Row: {
           accent_color: string | null
@@ -349,6 +373,15 @@ export type Database = {
       }
       admin_delete_invite: { Args: { _code: string }; Returns: boolean }
       admin_delete_profile: { Args: { _handle: string }; Returns: boolean }
+      admin_list_invite_redemptions: {
+        Args: never
+        Returns: {
+          code: string
+          created_at: string
+          handle: string
+          user_id: string
+        }[]
+      }
       admin_list_invites: {
         Args: never
         Returns: {

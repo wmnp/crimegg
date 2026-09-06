@@ -10,8 +10,9 @@ import { signupNow } from "@/lib/auth.functions";
 import { Header, Footer } from "./index";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (search: Record<string, unknown>): { mode?: "signin" | "signup" } => ({
+  validateSearch: (search: Record<string, unknown>): { mode?: "signin" | "signup"; code?: string } => ({
     mode: search.mode === "signin" ? "signin" : search.mode === "signup" ? "signup" : undefined,
+    code: typeof search.code === "string" && search.code.length <= 64 ? search.code : undefined,
   }),
   head: () => ({
     meta: [
